@@ -152,7 +152,7 @@ class Thermometer:
 
         self._anti_windup = 300 / self.kI
 
-        self._last_temperature = collections.deque([self.get_temperature()], self.derivative_smoothing_window)
+        self._last_temperature = collections.deque([self.get_temperature()], self.derivative_smoothing_window + 1)
         self._integral = fan.min_pwm / self.kI
 
     def get_temperature(self):
@@ -177,11 +177,14 @@ class Thermometer:
         else:
             raise RuntimeError("Didn't find temperature in output of command {}".format(str(command)))
 
+    def update_temperature(self):
+        self._last_temperature.append(self.get_temperature())
+
     def need_fan(self):
-        return self.get_temperature() >= self.fan_start_temperature
+        return self._last_temperature[-1] >= self.fan_start_temperature
 
     def requiered_fan_pwm(self):
-        temperature = self.get_temperature()
+        temperature = self._last_temperature[-1]
 
         error = temperature - self.target_temperature
 
@@ -194,8 +197,6 @@ class Thermometer:
         derivation = temperature - self._last_temperature[0]
 
         ret = self.kP * error + self.kI * self._integral + self.kD * derivation
-
-        self._last_temperature.append(temperature)
 
         return ret
 
