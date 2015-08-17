@@ -30,11 +30,32 @@ def _json_dump_compact(data):
 def _json_dump_indented(data):
     return json.dumps(data, indent=4, separators=(",", ": "))
 
-def load_fans():
-    with open("pysystemfan.json", "r") as fp:
-        config = json.load(fp)
+class PySystemFan:
+    _params = [
+        ("sleep_time", 30, "How long to sleep between updates (seconds)."),
+        ("status_server_port", 9191, "Port on which to listen for HTTP status updates. Set to 0 to disable server."),
+        ("status_server_bind", "localhost", "Address to bind for status server."),
+    ]
 
-    return [Fan(**fan_params) for fan_params in config]
+    def __init__(self):
+        with open("pysystemfan.json", "r") as fp:
+            config = json.load(fp)
+
+        _process_params(self, config)
+
+        self.fans = [Fan(self.sleep_time, **fan_params) for fan_params in config["fans"]]
+
+    def status(self):
+        return {
+            "timestamp": time.time(),
+            "fans": [fan.status() for fan in self.fans]
+        }
+
+    def config(self):
+        ret = _dump_params(self)
+        ret["fans"] = [fan.config() for fan in self.fans]
+        return ret
+
 
 class Fan:
     _params = [
@@ -42,7 +63,6 @@ class Fan:
         ("rpm_path", None, "Path in (typically /sys/class/hwmon/hwmon?/fan?_input) that is used to set rpm"),
 
         ("name", "", "Optional name that wil appear in status output if present"),
-        ("sleep_time", 30, "How long to sleep between updates (seconds)."),
         ("min_pwm", 64, "Minimal allowed nonzero PWM value. Below this the fan will stop in normal mode, or stay on minimum in settle mode."),
         ("spinup_pwm", 128, "PWM value to spin the fan up."),
         ("spinup_time", 1, "How long the spinup_pwm will be applied (seconds)."),
@@ -55,11 +75,12 @@ class Fan:
     SETTLE = 1
     RUNNING = 2
 
-    def __init__(self, **params):
+    def __init__(self, sleep_time, **params):
         _process_params(self, params)
 
         self._state = self.STOPPED if self.get_rpm() == 0 else self.SETTLE
         self._settle_remaining = self.settle_update_count
+        self._sleep_time = sleep_time
 
         self.thermometers = [Thermometer(self, **thermometer_params) for thermometer_params in params["thermometers"]]
 
@@ -83,11 +104,13 @@ class Fan:
 
     def update_loop(self):
         while True:
+            for thermometer in self.thermometers:
+                thermometer.update_temperature()
             if self._state == self.STOPPED:
                 if any(thermometer.need_fan() for thermometer in self.thermometers):
                     yield from self.spinup()
                 else:
-                    yield self.sleep_time
+                    yield self._sleep_time
             else:
                 if self._state == self.SETTLE:
                     if self._settle_remaining <= 0:
@@ -106,7 +129,7 @@ class Fan:
                 else:
                     self.set_pwm(round(pwm))
 
-                yield self.sleep_time
+                yield self._sleep_time
 
     def calibrate():
         raise NotImplementedError();
@@ -214,19 +237,17 @@ class Thermometer:
     def config(self):
         return _dump_params(self)
 
-def status(fans):
-    return [fan.status() for fan in fans]
 
 def main():
-    fans = load_fans()
+    pysystemfan = PySystemFan()
 
     try:
-        wakeup_times = [iter(f) for f in fans]
+        wakeup_times = [iter(f) for f in pysystemfan.fans]
         for wakeup_time in heapq.merge(*wakeup_times):
-            print(_json_dump_indented(status(fans)), time.time())
+            print(_json_dump_indented(pysystemfan.status()))
             time.sleep(wakeup_time - time.time())
     finally:
-        for fan in fans:
+        for fan in pysystemfan.fans:
             fan.set_pwm(255)
 
 if __name__ == "__main__":

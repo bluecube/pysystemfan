@@ -1,39 +1,41 @@
-[
-    {
-        "pwm_path": "/sys/class/hwmon/hwmon2/pwm1",
-        "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input",
+{
+    "fans": [
+        {
+            "pwm_path": "/sys/class/hwmon/hwmon2/pwm1",
+            "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input",
 
-        "min_pwm": 80,
+            "min_pwm": 80,
 
-        "thermometers": [
-            {
-                "name": "sys_temp",
+            "thermometers": [
+                {
+                    "name": "sys_temp",
 
-                "path": "/sys/class/hwmon/hwmon2/temp1_input",
-                "target_temperature": 47,
-                "fan_start_temperature": 52
-            },
-            {
-                "name": "sda",
+                    "path": "/sys/class/hwmon/hwmon2/temp1_input",
+                    "target_temperature": 47,
+                    "fan_start_temperature": 52
+                },
+                {
+                    "name": "sda",
 
-                "path": "smartctl:/dev/sda",
-                "target_temperature": 35,
-                "fan_start_temperature": 40
-            },
-            {
-                "name": "sdb",
+                    "path": "smartctl:/dev/sda",
+                    "target_temperature": 35,
+                    "fan_start_temperature": 39
+                },
+                {
+                    "name": "sdb",
 
-                "path": "smartctl:/dev/sdb",
-                "target_temperature": 35,
-                "fan_start_temperature": 40
-            },
-            {
-                "name": "sdd",
+                    "path": "smartctl:/dev/sdb",
+                    "target_temperature": 35,
+                    "fan_start_temperature": 39
+                },
+                {
+                    "name": "sdd",
 
-                "path": "smartctl:/dev/sdd",
-                "target_temperature": 36,
-                "fan_start_temperature": 40
-            }
-        ]
-    }
-]
+                    "path": "smartctl:/dev/sdd",
+                    "target_temperature": 36,
+                    "fan_start_temperature": 39
+                }
+            ]
+        }
+    ]
+}
