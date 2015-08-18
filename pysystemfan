@@ -167,7 +167,7 @@ class Thermometer:
         ("kI", 10, "Integration constant of the controller."),
         ("kD", 20, "Derivation constant of the controller."),
 
-        ("derivative_smoothing_window", 5, "Number of updates to use as a smoothing window for derivative term")
+        ("derivative_smoothing_window", 300, "Number of seconds to use as a smoothing window for derivative term. This gets rounded to a nearest whole number of updates.")
     ]
 
     def __init__(self, fan, **params):
@@ -175,7 +175,7 @@ class Thermometer:
 
         self._anti_windup = 300 / self.kI
 
-        self._last_temperature = collections.deque([self.get_temperature()], self.derivative_smoothing_window + 1)
+        self._last_temperature = collections.deque([self.get_temperature()], round(self.derivative_smoothing_window / fan._sleep_time) + 1)
         self._integral = fan.min_pwm / self.kI
 
     def get_temperature(self):
