@@ -186,7 +186,7 @@ class Thermometer:
 
     @staticmethod
     def _get_smartctl_temperature(arguments):
-        command = ["smartctl", "-a"] + shlex.split(arguments)
+        command = ["smartctl", "-A"] + shlex.split(arguments)
         process = subprocess.Popen(command,
                                    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
                                    universal_newlines=True)
