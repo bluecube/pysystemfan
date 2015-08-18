@@ -1,0 +1,6 @@
+
+Cooling power vs RPM:
+http://www.electronics-cooling.com/1996/05/all-you-need-to-know-about-fans/
+
+Starting RPM, PWM input vs RPM
+http://www.formfactors.org/developer%5Cspecs%5C4_Wire_PWM_Spec.pdf
