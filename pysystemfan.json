@@ -4,8 +4,6 @@
             "pwm_path": "/sys/class/hwmon/hwmon2/pwm1",
             "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input",
 
-            "min_pwm": 80,
-
             "thermometers": [
                 {
                     "name": "sys_temp",
