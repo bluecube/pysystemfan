@@ -1,9 +1,10 @@
-import config_params
+from . import config_params
+from . import thermometer
 
 import subprocess
 import shlex
 
-class Harddrive(config_params.Configurable):
+class Harddrive(config_params.Configurable, thermometer.Thermometer):
     _params = [
         ("path", None, "Device file of the disk. For example /dev/sda"),
         ("stat_path", "", "Path for reading activity statistics (/sys/block/<path basename>/stat). "
@@ -52,6 +53,9 @@ class Harddrive(config_params.Configurable):
 
         raise RuntimeError("Didn't find temperature in output of {}".format(self._list_to_shell(command)))
 
+    def get_activity(self):
+        return 1 if self.is_spinning() else 0
+
     def spindown(self):
         subprocess.check_call(["hdparm", "-y", self.path])
 
@@ -74,7 +78,7 @@ class Harddrive(config_params.Configurable):
         with open(self.stat_path, "r") as fp:
             return tuple(map(int, fp.read().split()))
 
-    def had_activity(self):
+    def had_io(self):
         stat = self._get_stat()
         previous = self._previous_stat
         self._previous_stat = stat
@@ -82,7 +86,7 @@ class Harddrive(config_params.Configurable):
         return stat != previous
 
     def update_spindown(self):
-        if self.
+        raise NotImplementedError()
 
     @staticmethod
     def _list_to_shell(l):
