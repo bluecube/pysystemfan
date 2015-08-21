@@ -13,8 +13,23 @@ class Configurable:
                              get constructed from them. (as cls(self, **parameters))
     """
 
+    def _params_iter(self):
+        used_names = set()
+
+        for klass in self.mro():
+            try:
+                params = klass._params
+            except AttributeError:
+                continue
+
+            for name, default, description:
+                if name in used_names:
+                    continue
+                used_names.add(name)
+                yield (name, default, description)
+
     def process_params(self, **params):
-        for name, default, description in self._params:
+        for name, default, description in self._params_iter():
             if isinstance(default, ListOf):
                 value = [default._cls(self, item) for item in params.get(name)]
             else:
@@ -26,7 +41,7 @@ class Configurable:
 
     def dump_params(self, include_defaults = True):
         ret = collections.OrderedDict()
-        for name, default, desription in self._params:
+        for name, default, desription in self._params_iter():
             value = getattr(self, name)
 
             if isinstance(default, ListOf):
