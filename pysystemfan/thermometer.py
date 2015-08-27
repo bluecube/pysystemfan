@@ -2,10 +2,14 @@ from . import config_params
 
 class Thermometer(config_params.Configurable):
     _params = [
-        ("name", "", "Optional name that wil appear in status output if present"),
+        ("name", "", "Name that wil appear in status output if present"
+                     "If empty (the default), gets assigned based on path."),
         ("max_temperature", None, "Max temperature that we are allowed to reach."),
     ]
 
+    def __init__(self):
+        if not len(self.name):
+            self.name = self._get_automatic_name()
 
 class SystemThermometer(config_params.Configurable, Thermometer):
     _params = [
@@ -23,8 +27,19 @@ class SystemThermometer(config_params.Configurable, Thermometer):
 
         self._anti_windup = 300 / self.kI
 
+        super.__init__()
+
         self._last_temperature = collections.deque([self.get_temperature()], round(self.derivative_smoothing_window / fan._sleep_time) + 1)
         self._integral = fan.min_pwm / self.kI
+    def _get_automatic_name(self):
+        if not self.path.endswith("_input"):
+            return self.path
+
+        try:
+            with open(self._path[:-len("input")] + "name", "r") as fp:
+                return fp.read().strip()
+        except:
+            return self.path
 
     def get_temperature(self):
         if self.path.startswith(self._smartctl_prefix):

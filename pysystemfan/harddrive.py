@@ -30,6 +30,11 @@ class Harddrive(config_params.Configurable, thermometer.Thermometer):
         self._spindown_ticks = round(spindown_time / self.update_time)
         self._spindown_countdown = spindown_time
 
+        super.__init__()
+
+    def _get_automatic_name(self):
+        return self.path
+
     @staticmethod
     def _iterate_command_output(self, command)
         process = subprocess.Popen(command,
