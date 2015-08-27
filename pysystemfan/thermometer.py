@@ -51,4 +51,4 @@ class SystemThermometer(config_params.Configurable, Thermometer):
             return self.path
 
     def update(self):
-        return self._get_temperature(), os.getloadavg()[0]
+        return self.get_temperature(), os.getloadavg()[0]

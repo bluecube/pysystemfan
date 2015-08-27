@@ -88,21 +88,14 @@ class Harddrive(config_params.Configurable, thermometer.Thermometer):
     def get_automatic_name(self):
         return self.path
 
-    def update(self):
-        spinning = self.is_spinning()
-
-        if self.is_spinning and not self.measure_in_idle:
-            ret = None, spinning
-        else:
-            ret = self.get_temperature(), spinning
-
-        if not spinning:
+    def _update_spindown(self, is_spinning):
+        if not is_spinning:
             # if the drive is stopped we don't need to handle spindowns
-            return ret
+            return
 
         if self.spindown_time == 0:
             # if spindowns are not enabled, we don't need to handle them
-            return ret
+            return
 
         if self.had_io():
             self._spindown_counter = 0
@@ -111,3 +104,15 @@ class Harddrive(config_params.Configurable, thermometer.Thermometer):
 
         if self._spindown_counter >= self._spindown_ticks:
             self.spindown()
+
+    def update(self):
+        is_spinning = self.is_spinning()
+
+        if is_spinning and not self.measure_in_idle:
+            temperature = None
+        else:
+            temperature = self.get_temperature()
+
+        self._update_spindown(is_spinning)
+
+        return temperature, is_spinning
