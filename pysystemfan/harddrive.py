@@ -108,10 +108,10 @@ class Harddrive(config_params.Configurable, thermometer.Thermometer):
     def update(self):
         is_spinning = self.is_spinning()
 
-        if is_spinning and not self.measure_in_idle:
-            temperature = None
-        else:
+        if is_spinning or self.measure_in_idle:
             temperature = self.get_temperature()
+        else:
+            temperature = None
 
         self._update_spindown(is_spinning)
 
