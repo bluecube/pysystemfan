@@ -4,6 +4,20 @@ from . import thermometer
 import subprocess
 import shlex
 
+def _iterate_command_output(self, command)
+    process = subprocess.Popen(command,
+                               stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
+                               universal_newlines=True)
+    for line in process.stdout:
+        yield line
+
+    if process.wait():
+        raise RuntimeError("Command {} failed with return code {}".format(_list_to_shell(command),
+                                                                          process.returncode))
+
+def _list_to_shell(l):
+    return " ".join(shlex.quote(x) for x in l)
+
 class Harddrive(config_params.Configurable, thermometer.Thermometer):
     _params = [
         ("path", None, "Device file of the disk. For example /dev/sda"),
@@ -26,35 +40,18 @@ class Harddrive(config_params.Configurable, thermometer.Thermometer):
         self.update_time = parent.update_time
         self._previous_stat = None
         self._spindown_ticks = round(spindown_time / self.update_time)
-        self._spindown_countdown = spindown_time
+        self._spindown_countdown = self._spindown_ticks
 
         super.__init__()
 
-    def _get_automatic_name(self):
-        return self.path
-
-    @staticmethod
-    def _iterate_command_output(self, command)
-        process = subprocess.Popen(command,
-                                   stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
-                                   universal_newlines=True)
-        for line in process.stdout:
-            yield line
-
-        if process.wait():
-            raise RuntimeError("Command {} failed with return code {}".format(str(command), process.returncode))
-
     def get_temperature(self):
-        if not self.measure_in_idle and not self.is_spinning():
-            return None
-
         command = ["smartctl", "-A", self.path]
-        for line in self._iterate_command_output(self, command):
+        for line in _iterate_command_output(self, command):
             split = line.split()
             if len(split) >= 10 and int(split[0]) == 194: #"Temperature_Celsius"
                 return int(split[9])
 
-        raise RuntimeError("Didn't find temperature in output of {}".format(self._list_to_shell(command)))
+        raise RuntimeError("Didn't find temperature in output of {}".format(_list_to_shell(command)))
 
     def get_activity(self):
         return 1 if self.is_spinning() else 0
@@ -75,7 +72,7 @@ class Harddrive(config_params.Configurable, thermometer.Thermometer):
                 else:
                     return False
 
-        raise RuntimeError("Didn't find drive state in output of {}".format(self._list_to_shell(command)))
+        raise RuntimeError("Didn't find drive state in output of {}".format(_list_to_shell(command)))
 
     def _get_stat(self):
         with open(self.stat_path, "r") as fp:
@@ -88,9 +85,29 @@ class Harddrive(config_params.Configurable, thermometer.Thermometer):
 
         return stat != previous
 
-    def update_spindown(self):
-        raise NotImplementedError()
+    def get_automatic_name(self):
+        return self.path
 
-    @staticmethod
-    def _list_to_shell(l):
-        return " ".join(shlex.quote(x) for x in l)
+    def update(self):
+        spinning = self.is_spinning()
+
+        if self.is_spinning and not self.measure_in_idle:
+            ret = None, spinning
+        else:
+            ret = self.get_temperature(), spinning
+
+        if not spinning:
+            # if the drive is stopped we don't need to handle spindowns
+            return ret
+
+        if self.spindown_time == 0:
+            # if spindowns are not enabled, we don't need to handle them
+            return ret
+
+        if self.had_io():
+            self._spindown_counter = 0
+        else:
+            self._spindown_counter += 1
+
+        if self._spindown_counter >= self._spindown_ticks:
+            self.spindown()

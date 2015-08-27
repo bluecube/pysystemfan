@@ -1,4 +1,5 @@
 from . import config_params
+import os
 
 class Thermometer(config_params.Configurable):
     _params = [
@@ -9,7 +10,16 @@ class Thermometer(config_params.Configurable):
 
     def __init__(self):
         if not len(self.name):
-            self.name = self._get_automatic_name()
+            self.name = self.get_automatic_name()
+
+    def get_automatic_name(self):
+        """ Return automatic name determined from config parameters """
+        raise NotImplementedError()
+
+    def update(self):
+        """ Returns tuple of current temperature and activity value, do any
+        periodic tasks necessary. """
+        raise NotImplementedError()
 
 class SystemThermometer(config_params.Configurable, Thermometer):
     _params = [
@@ -23,7 +33,14 @@ class SystemThermometer(config_params.Configurable, Thermometer):
 
         super.__init__()
 
-    def _get_automatic_name(self):
+    def get_temperature(self):
+        if self.path.startswith(self._smartctl_prefix):
+            return self._get_smartctl_temperature(self.path[len(self._smartctl_prefix):])
+        else:
+            with open(self.rpm_path, "r") as fp:
+                return int(fp.readline())
+
+    def get_automatic_name(self):
         if not self.path.endswith("_input"):
             return self.path
 
@@ -33,15 +50,5 @@ class SystemThermometer(config_params.Configurable, Thermometer):
         except:
             return self.path
 
-    def get_temperature(self):
-        if self.path.startswith(self._smartctl_prefix):
-            return self._get_smartctl_temperature(self.path[len(self._smartctl_prefix):])
-        else:
-            with open(self.rpm_path, "r") as fp:
-                return int(fp.readline())
-
-    def get_activity(self):
-        return self.getloadavg()[0]
-
-    def config(self):
-        return _dump_params(self)
+    def update(self):
+        return self._get_temperature(), os.getloadavg()[0]
