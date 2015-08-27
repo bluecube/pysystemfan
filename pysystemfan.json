@@ -1,39 +1,39 @@
 {
+    "model_storage_path": "/tmp/pysystemfan_model.json",
+
     "fans": [
         {
             "pwm_path": "/sys/class/hwmon/hwmon2/pwm1",
-            "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input",
+            "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input"
+        }
+    ],
 
-            "thermometers": [
-                {
-                    "name": "sys_temp",
+    "thermometers": [
+        {
+            "path": "/sys/class/hwmon/hwmon2/temp1_input",
+            "max_temperature": 52
+        }
+    ],
 
-                    "path": "/sys/class/hwmon/hwmon2/temp1_input",
-                    "target_temperature": 47,
-                    "fan_start_temperature": 52
-                },
-                {
-                    "name": "sda",
-
-                    "path": "smartctl:/dev/sda",
-                    "target_temperature": 35,
-                    "fan_start_temperature": 39
-                },
-                {
-                    "name": "sdb",
-
-                    "path": "smartctl:/dev/sdb",
-                    "target_temperature": 35,
-                    "fan_start_temperature": 39
-                },
-                {
-                    "name": "sdd",
-
-                    "path": "smartctl:/dev/sdd",
-                    "target_temperature": 36,
-                    "fan_start_temperature": 39
-                }
-            ]
+    "harddrives": [
+        {
+            "path": "/dev/sda",
+            "max_temperature": 39,
+            "spindown_time": 1800
+        },
+        {
+            "path": "/dev/sdb",
+            "max_temperature": 39,
+            "spindown_time": 1800
+        },
+        {
+            "path": "/dev/sdd",
+            "max_temperature": 39,
+            "spindown_time": 1800
+        },
+        {
+            "path": "/dev/sdc",
+            "max_temperature": 39
         }
     ]
 }

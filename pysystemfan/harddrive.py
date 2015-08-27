@@ -12,8 +12,6 @@ class Harddrive(config_params.Configurable, thermometer.Thermometer):
 
         ("name", "", "Optional name that wil appear in status output if present."),
 
-        ("max_temperature", None, "Temperature that should not be exceeded (degrees C)."),
-
         ("spindown_time", 0, "After how long inactivity should the disk spin down (seconds). "
                              "This value will be rounded to the nearest update interval, "
                              "if zero, the drive will not be spun down by this sctipt."),

@@ -14,12 +14,6 @@ class Thermometer(config_params.Configurable):
 class SystemThermometer(config_params.Configurable, Thermometer):
     _params = [
         ("path", None, "Path in /sys (typically /sys/class/hwmon/hwmon?/temp?_input) that has the temperature."),
-
-        ("kP", 20, "Proportional constant of the controler."),
-        ("kI", 10, "Integration constant of the controller."),
-        ("kD", 20, "Derivation constant of the controller."),
-
-        ("derivative_smoothing_window", 300, "Number of seconds to use as a smoothing window for derivative term. This gets rounded to a nearest whole number of updates.")
     ]
 
     def __init__(self, fan, **params):
@@ -29,8 +23,6 @@ class SystemThermometer(config_params.Configurable, Thermometer):
 
         super.__init__()
 
-        self._last_temperature = collections.deque([self.get_temperature()], round(self.derivative_smoothing_window / fan._sleep_time) + 1)
-        self._integral = fan.min_pwm / self.kI
     def _get_automatic_name(self):
         if not self.path.endswith("_input"):
             return self.path
