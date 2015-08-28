@@ -21,16 +21,13 @@ class Thermometer(config_params.Configurable):
         periodic tasks necessary. """
         raise NotImplementedError()
 
-class SystemThermometer(config_params.Configurable, Thermometer):
+class SystemThermometer(Thermometer, config_params.Configurable):
     _params = [
         ("path", None, "Path in /sys (typically /sys/class/hwmon/hwmon?/temp?_input) that has the temperature."),
     ]
 
-    def __init__(self, fan, **params):
-        _process_params(self, params)
-
-        self._anti_windup = 300 / self.kI
-
+    def __init__(self, parent, **params):
+        self.process_params(params)
         super.__init__()
 
     def get_temperature(self):

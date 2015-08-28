@@ -18,7 +18,7 @@ def _iterate_command_output(self, command)
 def _list_to_shell(l):
     return " ".join(shlex.quote(x) for x in l)
 
-class Harddrive(config_params.Configurable, thermometer.Thermometer):
+class Harddrive(thermometer.Thermometer, config_params.Configurable):
     _params = [
         ("path", None, "Device file of the disk. For example /dev/sda"),
         ("stat_path", "", "Path for reading activity statistics (/sys/block/<path basename>/stat). "
