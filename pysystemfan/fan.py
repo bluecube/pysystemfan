@@ -12,8 +12,8 @@ class Fan(config_params.Configurable):
         ("spinup_time", 1, "How long the spinup_pwm will be applied (seconds)."),
     ]
 
-    def __init__(self, parent, **params):
-        self.process_params(**params)
+    def __init__(self, parent, params):
+        self.process_params(params)
         self.update_time = parent.update_time
 
         if not len(self.name):

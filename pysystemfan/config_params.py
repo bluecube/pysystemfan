@@ -9,29 +9,33 @@ class Configurable:
     name -- must be a valid python variable name
     default -- value
             -- None -- variable is required
-            -- ListOf(cls) - variable is a required list of dicts, cls instances
-                             get constructed from them. (as cls(self, **parameters))
+            -- ListOf(cls) - variable is a optional list of dicts, cls instances
+                             get constructed from them. (as cls(self, parameters))
+            -- InstanceOf(cls) - variable is a required dict, cls instance
+                                 get constructed from it. (as cls(self, parameters))
     """
 
     def _params_iter(self):
         used_names = set()
 
-        for klass in self.mro():
+        for klass in self.__class__.mro():
             try:
                 params = klass._params
             except AttributeError:
                 continue
 
-            for name, default, description:
+            for name, default, description in params:
                 if name in used_names:
                     continue
                 used_names.add(name)
                 yield (name, default, description)
 
-    def process_params(self, **params):
+    def process_params(self, params):
         for name, default, description in self._params_iter():
             if isinstance(default, ListOf):
-                value = [default._cls(self, item) for item in params.get(name)]
+                value = [default._cls(self, item) for item in params.get(name, [])]
+            elif isinstance(default, InstanceOf):
+                value = default._cls(self, params.get(name))
             else:
                 value = params.get(name, default)
                 if value is None:
@@ -46,11 +50,17 @@ class Configurable:
 
             if isinstance(default, ListOf):
                 ret[name] = [item.dump_params(include_defaults) for item in value]
+            if isinstance(default, InstanceOf):
+                ret[name] = value.dump_params(include_defaults)
             elif include_defaults or value != default:
                 ret[name] = value
 
         return ret
 
 class ListOf:
+    def __init__(self, cls):
+        self._cls = cls
+
+class InstanceOf:
     def __init__(self, cls):
         self._cls = cls

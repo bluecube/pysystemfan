@@ -4,7 +4,7 @@ from . import thermometer
 import subprocess
 import shlex
 
-def _iterate_command_output(self, command)
+def _iterate_command_output(self, command):
     process = subprocess.Popen(command,
                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
                                universal_newlines=True)
@@ -22,7 +22,7 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
     _params = [
         ("path", None, "Device file of the disk. For example /dev/sda"),
         ("stat_path", "", "Path for reading activity statistics (/sys/block/<path basename>/stat). "
-                          "If empty (the default), gets automatically assigned.")
+                          "If empty (the default), gets automatically assigned."),
 
         ("name", "", "Optional name that wil appear in status output if present."),
 
@@ -32,7 +32,7 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         ("measure_in_idle", False, "Selects whether to keep measuring temperature even when the drive is idle."),
     ]
 
-    def __init__(self, parent, **params):
+    def __init__(self, parent, params):
         self.process_params(params)
         if not len(self.stat_path):
             self.stat_path = "/sys/block/{}/stat".format(os.path.basename(self.path))

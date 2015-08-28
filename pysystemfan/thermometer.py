@@ -3,7 +3,7 @@ import os
 
 class Thermometer(config_params.Configurable):
     _params = [
-        ("name", "", "Name that wil appear in status output if present"
+        ("name", "", "Name that wil appear in status output if present "
                      "If empty (the default), gets assigned based on path."),
         ("max_temperature", None, "Max temperature that we are allowed to reach."),
     ]
@@ -26,7 +26,7 @@ class SystemThermometer(Thermometer, config_params.Configurable):
         ("path", None, "Path in /sys (typically /sys/class/hwmon/hwmon?/temp?_input) that has the temperature."),
     ]
 
-    def __init__(self, parent, **params):
+    def __init__(self, parent, params):
         self.process_params(params)
         super.__init__()
 

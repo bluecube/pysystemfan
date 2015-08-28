@@ -10,5 +10,5 @@ class Model(config_params.Configurable):
         ("thermometer_variance", 0.5, "Variance of thermometer measurements."),
     ]
 
-    def __init__(self, fan, **params):
+    def __init__(self, parent, params):
         self.process_params(params)
