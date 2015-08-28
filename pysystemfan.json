@@ -1,5 +1,7 @@
 {
-    "model_storage_path": "/tmp/pysystemfan_model.json",
+    "model": {
+        "storage_path": "/tmp/pysystemfan_model.json"
+    },
 
     "fans": [
         {
