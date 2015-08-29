@@ -49,7 +49,14 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         command = ["smartctl", "-A", self.path]
         for line in _iterate_command_output(self, command):
             split = line.split()
-            if len(split) >= 10 and int(split[0]) == 194: #"Temperature_Celsius"
+            if len(split) < 10:
+                continue
+            try:
+                id_number = int(split[0])
+            except ValueError:
+                continue
+
+            if id_number == 194: #"Temperature_Celsius"
                 return int(split[9])
 
         raise RuntimeError("Didn't find temperature in output of {}".format(_list_to_shell(command)))
@@ -62,7 +69,7 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
     def is_spinning(self):
         command = ["hdparm", "-C", self.path]
-        for line in self._iterate_command_output(self, command):
+        for line in _iterate_command_output(self, command):
             split = line.split(":")
             if len(split) >= 2 and split[0].strip() == "drive state is":
                 state = split[1].strip()

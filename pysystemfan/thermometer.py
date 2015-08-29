@@ -31,11 +31,8 @@ class SystemThermometer(Thermometer, config_params.Configurable):
         super().__init__()
 
     def get_temperature(self):
-        if self.path.startswith(self._smartctl_prefix):
-            return self._get_smartctl_temperature(self.path[len(self._smartctl_prefix):])
-        else:
-            with open(self.rpm_path, "r") as fp:
-                return int(fp.readline())
+        with open(self.path, "r") as fp:
+            return int(fp.readline())
 
     def get_automatic_name(self):
         if not self.path.endswith("_input"):
