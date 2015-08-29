@@ -1,4 +1,5 @@
-from . import PySystemFan
+from . import pysystemfan
 
 if __name__ == "__main__":
-    psf = PySystemFan()
+    psf = pysystemfan.PySystemFan()
+    print(psf.dump_params())
