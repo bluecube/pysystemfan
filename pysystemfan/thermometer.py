@@ -28,7 +28,7 @@ class SystemThermometer(Thermometer, config_params.Configurable):
 
     def __init__(self, parent, params):
         self.process_params(params)
-        super.__init__()
+        super().__init__()
 
     def get_temperature(self):
         if self.path.startswith(self._smartctl_prefix):
