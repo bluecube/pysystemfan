@@ -3,6 +3,7 @@ from . import thermometer
 
 import subprocess
 import shlex
+import os
 
 def _iterate_command_output(self, command):
     process = subprocess.Popen(command,
@@ -39,10 +40,10 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         self.update_time = parent.update_time
         self._previous_stat = None
-        self._spindown_ticks = round(spindown_time / self.update_time)
+        self._spindown_ticks = round(self.spindown_time / self.update_time)
         self._spindown_countdown = self._spindown_ticks
 
-        super.__init__()
+        super().__init__()
 
     def get_temperature(self):
         command = ["smartctl", "-A", self.path]

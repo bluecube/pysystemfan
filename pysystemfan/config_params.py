@@ -1,3 +1,5 @@
+import collections
+
 class Configurable:
     """Classes inheriting from Configurable must define a class variable _params,
     which contains a list of (name, default_value, description) tuples of
@@ -31,6 +33,8 @@ class Configurable:
                 yield (name, default, description)
 
     def process_params(self, params):
+        used_names = set()
+
         for name, default, description in self._params_iter():
             if isinstance(default, ListOf):
                 value = [default._cls(self, item) for item in params.get(name, [])]
@@ -42,15 +46,20 @@ class Configurable:
                     raise RuntimeError("Value of parameter " + name + " must be set")
 
             setattr(self, name, value)
+            used_names.add(name)
 
-    def dump_params(self, include_defaults = True):
+        unused_param_names = set(params) - used_names
+        if len(unused_param_names):
+            raise RuntimeError("Parameters " + ", ".join(sorted(unused_param_names)) + " were not used")
+
+    def dump_params(self, include_defaults = False):
         ret = collections.OrderedDict()
         for name, default, desription in self._params_iter():
             value = getattr(self, name)
 
             if isinstance(default, ListOf):
                 ret[name] = [item.dump_params(include_defaults) for item in value]
-            if isinstance(default, InstanceOf):
+            elif isinstance(default, InstanceOf):
                 ret[name] = value.dump_params(include_defaults)
             elif include_defaults or value != default:
                 ret[name] = value

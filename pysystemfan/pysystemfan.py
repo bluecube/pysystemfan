@@ -13,7 +13,7 @@ class PySystemFan(config_params.Configurable):
         ("model", config_params.InstanceOf(model.Model), ""),
         ("fans", config_params.ListOf(fan.Fan), ""),
         ("thermometers", config_params.ListOf(thermometer.SystemThermometer), ""),
-        ("hadrddrives", config_params.ListOf(harddrive.Harddrive), ""),
+        ("harddrives", config_params.ListOf(harddrive.Harddrive), ""),
     ]
 
     def __init__(self):
