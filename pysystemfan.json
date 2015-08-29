@@ -3,6 +3,10 @@
         "storage_path": "/tmp/pysystemfan_model.json"
     },
 
+    "status_server": {
+        "enabled": true
+    },
+
     "fans": [
         {
             "pwm_path": "/sys/class/hwmon/hwmon2/pwm1",

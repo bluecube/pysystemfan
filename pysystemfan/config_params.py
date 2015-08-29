@@ -13,8 +13,14 @@ class Configurable:
             -- None -- variable is required
             -- ListOf(cls) - variable is a optional list of dicts, cls instances
                              get constructed from them. (as cls(self, parameters))
-            -- InstanceOf(cls) - variable is a required dict, cls instance
-                                 get constructed from it. (as cls(self, parameters))
+            -- InstanceOf(cls, missing) - variable is dict, cls instance get
+                                          constructed from it. (as cls(self, parameters)).
+                                          If the variable is not present, behavior depends
+                                          the value of "missing"
+                                          Exception -- raises exception,
+                                          anything else -- uses this as an argument to the class
+                                          constructor.
+
     """
 
     def _params_iter(self):
@@ -37,9 +43,12 @@ class Configurable:
 
         for name, default, description in self._params_iter():
             if isinstance(default, ListOf):
-                value = [default._cls(self, item) for item in params.get(name, [])]
+                value = [default.cls(self, item) for item in params.get(name, [])]
             elif isinstance(default, InstanceOf):
-                value = default._cls(self, params.get(name))
+                if default.missing == Exception:
+                    value = default.cls(self, params.get(name))
+                else:
+                    value = default.cls(self, params.get(name, default.missing))
             else:
                 value = params.get(name, default)
                 if value is None:
@@ -60,7 +69,9 @@ class Configurable:
             if isinstance(default, ListOf):
                 ret[name] = [item.dump_params(include_defaults) for item in value]
             elif isinstance(default, InstanceOf):
-                ret[name] = value.dump_params(include_defaults)
+                dumped = value.dump_params(include_defaults)
+                if include_defaults or len(dumped) > 0:
+                    ret[name] = dumped
             elif include_defaults or value != default:
                 ret[name] = value
 
@@ -68,8 +79,9 @@ class Configurable:
 
 class ListOf:
     def __init__(self, cls):
-        self._cls = cls
+        self.cls = cls
 
 class InstanceOf:
-    def __init__(self, cls):
-        self._cls = cls
+    def __init__(self, cls, missing = Exception):
+        self.cls = cls
+        self.missing = missing
