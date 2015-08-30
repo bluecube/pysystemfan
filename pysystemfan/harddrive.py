@@ -4,6 +4,7 @@ from . import thermometer
 import subprocess
 import shlex
 import os
+import collections
 
 def _iterate_command_output(self, command):
     process = subprocess.Popen(command,
@@ -61,9 +62,6 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         raise RuntimeError("Didn't find temperature in output of {}".format(_list_to_shell(command)))
 
-    def get_activity(self):
-        return 1 if self.is_spinning() else 0
-
     def spindown(self):
         subprocess.check_call(["hdparm", "-y", self.path])
 
@@ -93,9 +91,6 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         return stat != previous
 
-    def get_automatic_name(self):
-        return self.path
-
     def _update_spindown(self, is_spinning):
         if not is_spinning:
             # if the drive is stopped we don't need to handle spindowns
@@ -113,7 +108,15 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         if self._spindown_counter >= self._spindown_ticks:
             self.spindown()
 
-    def update(self):
+    def get_status(self):
+        temperature, is_spinning = self._get_temp_safe()
+        return collections.OrderedDict([
+            ("name", self.name),
+            ("temperature", temperature),
+            ("spinning", is_spinning)])
+
+    def _get_temp_safe(self):
+        """ Return temperature, is_spinning tuple."""
         is_spinning = self.is_spinning()
 
         if is_spinning or self.measure_in_idle:
@@ -121,6 +124,9 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         else:
             temperature = None
 
-        self._update_spindown(is_spinning)
+        return temperature, is_spinning
 
+    def update(self):
+        temperature, is_spinning = self._get_temp_safe()
+        self._update_spindown(is_spinning)
         return temperature, 1 if is_spinning else 0

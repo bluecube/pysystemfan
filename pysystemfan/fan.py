@@ -1,12 +1,12 @@
 from . import config_params
+import collections
 
 class Fan(config_params.Configurable):
     _params = [
         ("pwm_path", None, "Path in (typically /sys/class/hwmon/hwmon?/pwm?) that is used to set fan pwm setting"),
         ("rpm_path", None, "Path in (typically /sys/class/hwmon/hwmon?/fan?_input) that is used to set rpm"),
 
-        ("name", "", "Name that wil appear in status output if present "
-                     "If empty (the default), gets assigned based on path."),
+        ("name", None, "Name that will appear in status output."),
         ("min_pwm", 80, "Minimal allowed nonzero PWM value. Below this the fan will stop in normal mode, or stay on minimum in settle mode."),
         ("spinup_pwm", 128, "PWM value to spin the fan up."),
         ("spinup_time", 1, "How long the spinup_pwm will be applied (seconds)."),
@@ -20,9 +20,6 @@ class Fan(config_params.Configurable):
             self.name = self.get_automatic_name()
 
         self._running = self.get_rpm() > 0
-
-    def get_automatic_name(self):
-        return self.rpm_path # TODO
 
     def spinup(self):
         self.set_pwm(self.spinup_pwm)
@@ -41,3 +38,8 @@ class Fan(config_params.Configurable):
     def set_pwm(self, value):
         with open(self.pwm_path, "w") as fp:
             print(str(value), file=fp)
+
+    def get_status(self):
+        return collections.OrderedDict([
+            ("name", self.name),
+            ("rpm", self.get_rpm())])

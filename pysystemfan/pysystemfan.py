@@ -35,34 +35,12 @@ class PySystemFan(config_params.Configurable):
 
 
     def get_status(self):
-        "return status for the status server that can be directly jsonified"
+        "Return status for the status server that can be directly jsonified"
 
-        if self._last_status is None:
-            temperatures, activities = [], []
-        else:
-            temperatures, activities = self._last_status
-        thermometer_names = [x.name for x in self.all_thermometers]
-
-        fan_names = [x.name for x in self.fans]
-        if self._last_fan_pwms is None:
-            pwms = []
-        else:
-            pwms = self._last_fan_pwms
-
-        return {"temperatures":
-                    [collections.OrderedDict([
-                        ("name", name),
-                        ("temperature", temperature),
-                        ("activity", activity)])
-                     for name, temperature, activity
-                     in zip(thermometer_names, temperatures, activities)],
-                "fans":
-                    [collections.OrderedDict([
-                        ("name", name),
-                        ("pwm", pwm)])
-                     for name, pwm
-                     in zip(fan_names, pwms)]
-               }
+        return {
+            "thermometers": [x.get_status() for x in self.all_thermometers],
+            "fans": [x.get_status() for x in self.fans],
+            }
 
     def run(self):
         self.status_server.set_status_callback(self.get_status)

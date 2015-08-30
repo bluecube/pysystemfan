@@ -9,6 +9,7 @@
 
     "fans": [
         {
+            "name": "Fan",
             "pwm_path": "/sys/class/hwmon/hwmon2/pwm1",
             "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input"
         }
@@ -24,21 +25,25 @@
 
     "harddrives": [
         {
+            "name": "/dev/sda",
             "path": "/dev/sda",
             "max_temperature": 39,
             "spindown_time": 1800
         },
         {
+            "name": "/dev/sdb",
             "path": "/dev/sdb",
             "max_temperature": 39,
             "spindown_time": 1800
         },
         {
+            "name": "/dev/sdd",
             "path": "/dev/sdd",
             "max_temperature": 39,
             "spindown_time": 1800
         },
         {
+            "name": "/dev/sdc",
             "path": "/dev/sdc",
             "max_temperature": 39
         }
