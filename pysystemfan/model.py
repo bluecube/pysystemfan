@@ -12,3 +12,6 @@ class Model(config_params.Configurable):
 
     def __init__(self, parent, params):
         self.process_params(params)
+
+    def update(self, status, last_status):
+        return []
