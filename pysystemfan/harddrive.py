@@ -123,4 +123,4 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         self._update_spindown(is_spinning)
 
-        return temperature, is_spinning
+        return temperature, 1 if is_spinning else 0

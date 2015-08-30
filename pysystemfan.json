@@ -16,6 +16,7 @@
 
     "thermometers": [
         {
+            "name": "System temp",
             "path": "/sys/class/hwmon/hwmon2/temp1_input",
             "max_temperature": 52
         }

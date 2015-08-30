@@ -32,7 +32,7 @@ class SystemThermometer(Thermometer, config_params.Configurable):
 
     def get_temperature(self):
         with open(self.path, "r") as fp:
-            return int(fp.readline())
+            return int(fp.readline()) / 1000
 
     def get_automatic_name(self):
         if not self.path.endswith("_input"):

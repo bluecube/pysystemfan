@@ -8,6 +8,7 @@ from . import util
 
 import json
 import time
+import collections
 
 class PySystemFan(config_params.Configurable):
     _params = [
@@ -49,14 +50,16 @@ class PySystemFan(config_params.Configurable):
             pwms = self._last_fan_pwms
 
         return {"temperatures":
-                    [{"name": name,
-                      "temperature": temperature,
-                      "activity": activity}
+                    [collections.OrderedDict([
+                        ("name", name),
+                        ("temperature", temperature),
+                        ("activity", activity)])
                      for name, temperature, activity
                      in zip(thermometer_names, temperatures, activities)],
                 "fans":
-                    [{"name": name,
-                      "pwm": pwm}
+                    [collections.OrderedDict([
+                        ("name", name),
+                        ("pwm", pwm)])
                      for name, pwm
                      in zip(fan_names, pwms)]
                }
@@ -68,7 +71,7 @@ class PySystemFan(config_params.Configurable):
             time.sleep(self.update_time)
 
             while True:
-                status = zip(*[x.update() for x in self.all_thermometers])
+                status = tuple(zip(*[x.update() for x in self.all_thermometers]))
 
                 if self._last_status is not None:
                     fan_pwms = self.model.update(status, self._last_status)
