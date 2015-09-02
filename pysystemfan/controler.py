@@ -10,7 +10,7 @@ import json
 import time
 import collections
 
-class PySystemFan(config_params.Configurable):
+class Controler(config_params.Configurable):
     _params = [
         ("update_time", 30, "Time between updates in seconds."),
         ("status_server", config_params.InstanceOf(status_server.StatusServer), ""),
