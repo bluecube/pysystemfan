@@ -7,3 +7,9 @@ http://www.formfactors.org/developer%5Cspecs%5C4_Wire_PWM_Spec.pdf
 
 Result of the subjective noise test:
     noise level goes ~~ PWM**4
+
+https://github.com/desbma/hddfancontrol
+    - Control spindown manually to avoid smart access counting as activity
+
+https://github.com/louwrentius/storagefancontrol/blob/master/storagefancontrol
+    - parallel smartctl invocations
