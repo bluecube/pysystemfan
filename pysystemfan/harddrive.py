@@ -5,6 +5,7 @@ import subprocess
 import shlex
 import os
 import collections
+import logging
 
 def _iterate_command_output(self, command):
     process = subprocess.Popen(command,
@@ -43,6 +44,8 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         self._previous_stat = None
         self._spindown_ticks = round(self.spindown_time / self.update_time)
         self._spindown_countdown = self._spindown_ticks
+
+        self._logger = logging.getLogger(__name__)
 
         super().__init__()
 
@@ -106,6 +109,7 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
             self._spindown_counter += 1
 
         if self._spindown_counter >= self._spindown_ticks:
+            self._logger.info("Spinning down hard drive %s", self.name)
             self.spindown()
 
     def get_status(self):

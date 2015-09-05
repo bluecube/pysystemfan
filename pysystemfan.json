@@ -1,4 +1,6 @@
 {
+    "log_level": "DEBUG",
+
     "model": {
         "storage_path": "/tmp/pysystemfan_model.json"
     },
