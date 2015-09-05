@@ -45,18 +45,22 @@ class Controler(config_params.Configurable):
     def run(self):
         self.status_server.set_status_callback(self.get_status)
 
-        with self.status_server:
-            time.sleep(self.update_time)
-
-            while True:
-                status = tuple(zip(*[x.update() for x in self.all_thermometers]))
-
-                if self._last_status is not None:
-                    fan_pwms = self.model.update(status, self._last_status)
-                    for fan, pwm in zip(self.fans, fan_pwms):
-                        fan.set_pwm(pwm)
-                    self._last_fan_pwms = fan_pwms
-
-                self._last_status = status
-
+        try:
+            with self.status_server:
                 time.sleep(self.update_time)
+
+                while True:
+                    status = tuple(zip(*[x.update() for x in self.all_thermometers]))
+
+                    if self._last_status is not None:
+                        fan_pwms = self.model.update(status, self._last_status)
+                        for fan, pwm in zip(self.fans, fan_pwms):
+                            fan.set_pwm(pwm)
+                        self._last_fan_pwms = fan_pwms
+
+                    self._last_status = status
+
+                    time.sleep(self.update_time)
+        finally:
+            for fan in self.fans:
+                fan.set_pwm(255)
