@@ -8,8 +8,6 @@ class Fan(config_params.Configurable):
 
         ("name", None, "Name that will appear in status output."),
         ("min_pwm", 80, "Minimal allowed nonzero PWM value. Below this the fan will stop in normal mode, or stay on minimum in settle mode."),
-        ("spinup_pwm", 128, "PWM value to spin the fan up."),
-        ("spinup_time", 1, "How long the spinup_pwm will be applied (seconds)."),
     ]
 
     def __init__(self, parent, params):
@@ -20,16 +18,6 @@ class Fan(config_params.Configurable):
             self.name = self.get_automatic_name()
 
         self._running = self.get_rpm() > 0
-
-    def spinup(self):
-        self.set_pwm(self.spinup_pwm)
-        yield self.spinup_time
-        self._state = self.SETTLE
-        self._settle_remaining = self.settle_update_count
-
-    def stop(self):
-        self.set_pwm(0)
-        self._state = self.STOPPED
 
     def get_rpm(self):
         with open(self.rpm_path, "r") as fp:
