@@ -63,17 +63,21 @@ class Controler(config_params.Configurable):
         self.status_server.start()
 
         try:
+            for x in self.all_thermometers:
+                x.update()
+            pwms = self.model.init(self.all_thermometers, self.fans)
+            for fan, pwm in zip(self.fans, pwms):
+                assert(pwm == 0 or pwm > fan.min_pwm)
+                fan.set_pwm(pwm)
             time.sleep(self.update_time)
 
             while True:
                 for x in self.all_thermometers:
                     x.update()
-
-                fan_pwms = self.model.update(self.all_thermometers, self.fans)
-                for fan, pwm in zip(self.fans, fan_pwms):
+                pwms = self.model.update(self.all_thermometers, self.fans)
+                for fan, pwm in zip(self.fans, pwms):
+                    assert(pwm == 0 or pwm > fan.min_pwm)
                     fan.set_pwm(pwm)
-                self._last_fan_pwms = fan_pwms
-
                 time.sleep(self.update_time)
 
         except KeyboardInterrupt:
@@ -82,4 +86,5 @@ class Controler(config_params.Configurable):
             self._logger.exception("Unhandled exception")
         finally:
             self._full_steam()
+            self.model.save()
             self.status_server.stop()
