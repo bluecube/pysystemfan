@@ -133,4 +133,5 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
     def update(self):
         temperature, is_spinning = self._get_temp_safe()
         self._update_spindown(is_spinning)
-        return temperature, 1 if is_spinning else 0
+        self._cached_temperature = temperature
+        self._cached_activity = 1 if is_spinning else 0

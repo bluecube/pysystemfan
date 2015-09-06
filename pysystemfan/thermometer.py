@@ -1,6 +1,6 @@
 from . import config_params
-import os
 
+import os
 import collections
 
 class Thermometer(config_params.Configurable):
@@ -10,19 +10,26 @@ class Thermometer(config_params.Configurable):
     ]
 
     def __init__(self):
-        if not len(self.name):
-            self.name = self.get_automatic_name()
+        self._cached_temperature = None
+        self._cached_activity = None
 
-    def get_automatic_name(self):
-        """ Return automatic name determined from config parameters """
-        raise NotImplementedError()
+    def get_cached_temperature(self):
+        """ Return temperature (in °C) measured by the thermometer during last update."""
+        return self._cached_temperature
+
+    def get_cached_activity(self):
+        """ Return activity value measured during the last update.
+        Activity value is a number that should be a multiple of the power
+        dissipated near this thermometer. """
+        return self._cached_activity
 
     def get_status(self):
+        """ Returns a dict with current (not cached) status.
+        Probably should not be called too often. """
         raise NotImplementedError()
 
     def update(self):
-        """ Returns tuple of current temperature and activity value, do any
-        periodic tasks necessary. """
+        """ Do any periodic tasks necessary, update cached temperature and activity """
         raise NotImplementedError()
 
 class SystemThermometer(Thermometer, config_params.Configurable):
@@ -44,4 +51,5 @@ class SystemThermometer(Thermometer, config_params.Configurable):
             ("temperature", self.get_temperature())])
 
     def update(self):
-        return self.get_temperature(), os.getloadavg()[0]
+        self._cached_temperature = self.get_temperature()
+        self._cached_activity = os.getloadavg()[0]

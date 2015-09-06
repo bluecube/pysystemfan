@@ -61,15 +61,13 @@ class Controler(config_params.Configurable):
                 time.sleep(self.update_time)
 
                 while True:
-                    status = tuple(zip(*[x.update() for x in self.all_thermometers]))
+                    for x in self.all_thermometers:
+                        x.update()
 
-                    if self._last_status is not None:
-                        fan_pwms = self.model.update(status, self._last_status)
-                        for fan, pwm in zip(self.fans, fan_pwms):
-                            fan.set_pwm(pwm)
-                        self._last_fan_pwms = fan_pwms
-
-                    self._last_status = status
+                    fan_pwms = self.model.update(self.all_thermometers, self.fans)
+                    for fan, pwm in zip(self.fans, fan_pwms):
+                        fan.set_pwm(pwm)
+                    self._last_fan_pwms = fan_pwms
 
                     time.sleep(self.update_time)
             except KeyboardInterrupt:
