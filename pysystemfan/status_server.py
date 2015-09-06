@@ -25,7 +25,7 @@ class StatusServer(config_params.Configurable):
     def set_status_callback(self, callback):
         self._callback = callback
 
-    def __enter__(self):
+    def start(self):
         if self.enabled == "":
             return self
 
@@ -39,7 +39,7 @@ class StatusServer(config_params.Configurable):
         self._thread.start()
         return self
 
-    def __exit__(self, *args):
+    def stop(self):
         if self.enabled == "":
             return
 

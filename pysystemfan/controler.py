@@ -53,28 +53,33 @@ class Controler(config_params.Configurable):
             "fans": [x.get_status() for x in self.fans],
             }
 
+    def _full_steam(self):
+        self._logger.info("Restoring fans to 100% power.")
+        for fan in self.fans:
+            fan.set_pwm(255)
+
     def run(self):
         self.status_server.set_status_callback(self.get_status)
+        self.status_server.start()
 
-        with self.status_server:
-            try:
+        try:
+            time.sleep(self.update_time)
+
+            while True:
+                for x in self.all_thermometers:
+                    x.update()
+
+                fan_pwms = self.model.update(self.all_thermometers, self.fans)
+                for fan, pwm in zip(self.fans, fan_pwms):
+                    fan.set_pwm(pwm)
+                self._last_fan_pwms = fan_pwms
+
                 time.sleep(self.update_time)
 
-                while True:
-                    for x in self.all_thermometers:
-                        x.update()
-
-                    fan_pwms = self.model.update(self.all_thermometers, self.fans)
-                    for fan, pwm in zip(self.fans, fan_pwms):
-                        fan.set_pwm(pwm)
-                    self._last_fan_pwms = fan_pwms
-
-                    time.sleep(self.update_time)
-            except KeyboardInterrupt:
-                self._logger.info("Keyboard interrupt")
-            except:
-                self._logger.exception("Unhandled exception")
-            finally:
-                self._logger.info("Restoring fans to 100% power.")
-                for fan in self.fans:
-                    fan.set_pwm(255)
+        except KeyboardInterrupt:
+            self._logger.info("Keyboard interrupt")
+        except:
+            self._logger.exception("Unhandled exception")
+        finally:
+            self._full_steam()
+            self.status_server.stop()
