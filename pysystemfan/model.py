@@ -2,6 +2,7 @@ from . import config_params
 
 import logging
 import numpy.matlib
+import json
 
 class Model(config_params.Configurable):
     """ Model that controls cooling.
@@ -31,7 +32,7 @@ class Model(config_params.Configurable):
         self._prev_activities = None
 
         self.param_estimate = None
-        self.param_covariances = None
+        self.param_covariance = None
 
         self._logger = logging.getLogger(__name__)
 
@@ -46,10 +47,39 @@ class Model(config_params.Configurable):
         return temperatures, activities
 
     def load(self):
-        self._logger.error("Not implemented")
+        self._logger.info("Loading model parameters from %s", self.storage_path)
+
+        try:
+            with open(self.storage_path, "r") as fp:
+                loaded = json.load(fp)
+        except FileNotFoundError:
+            self._logger.info("Model storage file %s not found", self.storage_path)
+            return False
+        except ValueError:
+            self._logger.info("Invalid content of model storage file. Ignoring.")
+            return False
+
+        if self.i.fans != loaded["fans"] or self.i.thermometers != loaded["thermometers"]:
+            self._logger.info("Loaded model has unexpected dimensions (%d thermometers, %d fans loaded, "
+                              "%d thermometers, %d fans expected). Ignoring.",
+                              loaded["thermometers"], loaded["fans"],
+                              self.i.thermometers, self.i.fans)
+            return False
+
+        self.param_estimate = numpy.matrix(loaded["param_estimate"])
+        self.param_covariance = numpy.matrix(loaded["param_covariance"])
+
+        return True
 
     def save(self):
-        self._logger.error("Not implemented")
+        self._logger.info("Saving model parameters to %s", self.storage_path)
+
+        with open(self.storage_path, "w") as fp:
+            json.dump({"thermometers": self.i.thermometers,
+                       "fans": self.i.fans,
+                       "param_estimate": self.param_estimate.tolist(),
+                       "param_covariance": self.param_covariance.tolist()},
+                      fp)
 
     def init(self, thermometers, fans):
         temperatures, activities = self._extract_state(thermometers)
@@ -59,10 +89,17 @@ class Model(config_params.Configurable):
 
         self.i = _IndexHelper(len(thermometers), len(fans))
 
-        self.param_estimate = numpy.matlib.ones((self.i.param_count, 1))
-        self.param_estimate[self.i.f, 0] = 21 # Initial estimate for outside temperature
+        loaded = self.load()
 
-        #self.param_covariances = numpy.matlib.zeros
+        if not loaded:
+            # Find the inital values for the model. Mostly just guessing.
+
+            self.param_estimate = numpy.matlib.ones((self.i.param_count, 1))
+            self.param_estimate[self.i.f, 0] = 21 # Initial estimate for outside temperature
+
+            self.param_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
+            numpy.matlib.fill_diagonal(self.param_covariance, 2)
+            self.param_covariance[self.i.f, self.i.f] = 25 # 1 sigma error 5°C
 
 
         return self._prev_pwm
@@ -75,6 +112,8 @@ class _IndexHelper:
     """Just a helper that gives indices to the param array based on name"""
 
     def __init__(self, thermometers, fans):
+        self.thermometers = thermometers
+        self.fans = fans
         self.param_count = thermometers * (4 + fans) + 1
         self.a = range(0, thermometers)
         self.b = range(thermometers, 2 * thermometers)
