@@ -6,7 +6,8 @@
     },
 
     "status_server": {
-        "enabled": true
+        "enabled": true,
+        "bind": ""
     },
 
     "fans": [
@@ -29,24 +30,28 @@
         {
             "name": "/dev/sda",
             "path": "/dev/sda",
+            "measure_in_idle": true,
             "max_temperature": 39,
             "spindown_time": 1800
         },
         {
             "name": "/dev/sdb",
             "path": "/dev/sdb",
+            "measure_in_idle": true,
             "max_temperature": 39,
             "spindown_time": 1800
         },
         {
             "name": "/dev/sdd",
             "path": "/dev/sdd",
+            "measure_in_idle": true,
             "max_temperature": 39,
             "spindown_time": 1800
         },
         {
             "name": "/dev/sdc",
             "path": "/dev/sdc",
+            "measure_in_idle": true,
             "max_temperature": 39
         }
     ]
