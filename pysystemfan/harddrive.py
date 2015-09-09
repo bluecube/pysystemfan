@@ -66,7 +66,8 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         raise RuntimeError("Didn't find temperature in output of {}".format(_list_to_shell(command)))
 
     def spindown(self):
-        subprocess.check_call(["hdparm", "-y", self.path])
+        subprocess.check_call(["hdparm", "-y", self.path],
+                              stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
     def is_spinning(self):
         command = ["hdparm", "-C", self.path]
