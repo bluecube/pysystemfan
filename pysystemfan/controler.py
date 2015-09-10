@@ -48,10 +48,10 @@ class Controler(config_params.Configurable):
     def get_status(self):
         "Return status for the status server that can be directly jsonified"
 
-        return {
-            "thermometers": [x.get_status() for x in self.all_thermometers],
-            "fans": [x.get_status() for x in self.fans],
-            }
+        return collections.OrderedDict([
+            ("thermometers", [x.get_status() for x in self.all_thermometers]),
+            ("fans", [x.get_status() for x in self.fans]),
+            ])
 
     def _full_steam(self):
         self._logger.info("Restoring fans to 100% power.")
