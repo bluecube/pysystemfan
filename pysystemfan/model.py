@@ -3,18 +3,34 @@ from . import config_params
 import logging
 import numpy.matlib
 import json
+import math
 
 class Model(config_params.Configurable):
     """ Model that controls cooling.
 
     The main equation:
 
-    d(temp_i)/d(time) = a_i + b_i * activity_i + c_i * (avg_temp - temp_i) + (d_i + sum_j(fan_j * e_i,j)) * (f - temp_i)
+    d(temp_i)/d(time) = h_i(...) = a_i + b_i * activity_i + c_i * (avg_temp - temp_i) + (d_i + sum_j(fan_j * e_i,j)) * (f - temp_i)
 
     temp_i and activity_i are measured variables
     fan_j is model the output of this model from previous step
     a_i, b_i, c_i, d_i, e_i,j and f are model parameters (f is estimate of outside temperature)
     avg_temp is average of temp_i
+
+
+    Partial derivatives for EKF update:
+
+    d(h_i)/d(a_j)   = 1 if i == j
+                    = 0 if i != j
+    d(h_i)/d(b_j)   = activity_i if i == j
+                    = 0 if i != j
+    d(h_i)/d(c_j)   = (avg_temp - temp_i) if i == j
+                    = 0 if i != j
+    d(h_i)/d(d_j)   = (f - temp_i) if i == j
+                    = 0 if i != j
+    d(h_i)/d(e_j,k) = fan_k * (f - temp_i) if i == j
+                    = 0 if i != j
+    d(h_i)/d(f)     = d_i + sum_k(fan_k * e_i,k)
     """
 
     _params = [
@@ -28,13 +44,19 @@ class Model(config_params.Configurable):
     def __init__(self, parent, params):
         self.process_params(params)
 
-        self._prev_temperatures = None
-        self._prev_activities = None
+        self._logger = logging.getLogger(__name__)
+
+        self.update_time = parent.update_time
+
+        self.prev_temperatures = None
+        self.prev_activities = None
+        self.prev_pwm = None
 
         self.param_estimate = None
         self.param_covariance = None
 
-        self._logger = logging.getLogger(__name__)
+        # Helper matrices for parameter estimation
+        self.process_noise = None
 
     @staticmethod
     def _extract_state(thermometers):
@@ -81,11 +103,35 @@ class Model(config_params.Configurable):
                        "param_covariance": self.param_covariance.tolist()},
                       fp)
 
+    def model_step(self, temperatures, activities, fans):
+        """ Calculate the h_i functions, returns temperature derivatives. """
+        #return [self.param_estimate[self.i.a[i]] +
+        #        self.param_estimate[self.i.b[i]] * activities[i]
+
+    def observation_matrix(self, temperatures, activities, fans):
+        """ Return a matrix with partial derivatives of the observation function """
+
+        avg_temp = math.fsum(temperatures) / len(temperatures)
+
+        ret = numpy.matlib.zeros((self.i.thermometers, self.i.param_count))
+        for i in range(self.i.thermometers):
+            ret[i, self.i.a[i]] = 1
+            ret[i, self.i.b[i]] = activities[i]
+            ret[i, self.i.c[i]] = avg_temp - temperatures[i]
+            ret[i, self.i.d[i]] = self.param_estimate[self.i.f] - temperatures[i]
+            for k in range(self.i.fans):
+                ret[i, self.i.e[i][k]] = fans[k] * (self.param_estimate[self.i.f] - temperatures[i])
+                ret[i, self.i.f] += fans[k] * self.param_estimate[self.i.e[i][k]]
+            ret[i, self.i.f] += self.param_estimate[self.i.d[i]]
+
+        return ret
+
+
     def init(self, thermometers, fans):
         temperatures, activities = self._extract_state(thermometers)
-        self._prev_temperatures = temperatures
-        self._prev_activities = activities
-        self._prev_pwm = [255 for fan in fans]
+        self.prev_temperatures = temperatures
+        self.prev_activities = activities
+        self.prev_pwm = [255 for fan in fans]
 
         self.i = _IndexHelper(len(thermometers), len(fans))
 
@@ -101,12 +147,26 @@ class Model(config_params.Configurable):
             numpy.matlib.fill_diagonal(self.param_covariance, 2)
             self.param_covariance[self.i.f, self.i.f] = 25 # 1 sigma error 5°C
 
+        self.process_noise = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
+        numpy.matlib.fill_diagonal(self.process_noise,
+                                   self.parameter_variance * self.update_time / 3600)
+        self.process_noise[self.i.f, self.i.f] = self.temperature_variance * self.update_time / 3600
 
-        return self._prev_pwm
+        return self.prev_pwm
 
     def update(self, thermometers, fans):
         temperatures, activities = self._extract_state(thermometers)
-        return self._prev_pwm
+
+        avg_temperatures = [(t1 + t2) / 2 for t1, t2 in zip(self.prev_temperatures, temperatures)]
+        avg_activities = [(a1 + a2) / 2 for a1, a2 in zip(self.prev_activities, activities)]
+        delta_temperatures = [t1 - t2 for t1, t2 in zip(self.prev_temperatures, temperatures)]
+
+        observation_matrix = self.observation_matrix(avg_temperatures,
+                                                     avg_activities,
+                                                     self.prev_pwm)
+
+
+        return self.prev_pwm
 
 class _IndexHelper:
     """Just a helper that gives indices to the param array based on name"""
