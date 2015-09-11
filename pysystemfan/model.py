@@ -35,10 +35,10 @@ class Model(config_params.Configurable):
 
     _params = [
         ("storage_path", None, "File where to save the model"),
-        ("parameter_variance", 0.01, "1-sigma change per hour of parameters other"
+        ("parameter_stdev", 0.01, "1-sigma change per hour of parameters other"
                                      "than external temperature"),
-        ("temperature_variance", 0.5, "1-sigma change per hour of external temperature"),
-        ("thermometer_variance", 0.5, "Variance of thermometer measurements."),
+        ("temperature_stdev", 0.5, "Standard deviation of external temperature. In °C/hour"),
+        ("thermometer_stdev", 0.5, "Standard deviation of thermometer measurements. In °C."),
     ]
 
     def __init__(self, parent, params):
@@ -149,8 +149,8 @@ class Model(config_params.Configurable):
 
         self.process_noise = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
         numpy.matlib.fill_diagonal(self.process_noise,
-                                   self.parameter_variance * self.update_time / 3600)
-        self.process_noise[self.i.f, self.i.f] = self.temperature_variance * self.update_time / 3600
+                                   self.parameter_stdev**2 * self.update_time / 3600)
+        self.process_noise[self.i.f, self.i.f] = self.temperature_stdev**2 * self.update_time / 3600
 
         return self.prev_pwm
 
