@@ -13,7 +13,7 @@ class Model(config_params.Configurable):
     d(temp_i)/d(time) = h_i(...) = a_i + b_i * activity_i + c_i * (avg_temp - temp_i) + (d_i + sum_j(fan_j * e_i,j)) * (f - temp_i)
 
     temp_i and activity_i are measured variables
-    fan_j is model the output of this model from previous step
+    fan_j is model the output of this model from previous step (range 0-1 is expected here!)
     a_i, b_i, c_i, d_i, e_i,j and f are model parameters (f is estimate of outside temperature)
     avg_temp is average of temp_i
 
@@ -120,8 +120,8 @@ class Model(config_params.Configurable):
             ret[i, self.i.c[i]] = avg_temp - temperatures[i]
             ret[i, self.i.d[i]] = self.param_estimate[self.i.f] - temperatures[i]
             for k in range(self.i.fans):
-                ret[i, self.i.e[i][k]] = fans[k] * (self.param_estimate[self.i.f] - temperatures[i])
-                ret[i, self.i.f] += fans[k] * self.param_estimate[self.i.e[i][k]]
+                ret[i, self.i.e[i][k]] = fans[k] * (self.param_estimate[self.i.f] - temperatures[i]) / 255
+                ret[i, self.i.f] += fans[k] * self.param_estimate[self.i.e[i][k]] / 255
             ret[i, self.i.f] += self.param_estimate[self.i.d[i]]
 
         return ret
