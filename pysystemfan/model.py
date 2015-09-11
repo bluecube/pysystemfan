@@ -56,7 +56,8 @@ class Model(config_params.Configurable):
         self.param_covariance = None
 
         # Helper matrices for parameter estimation
-        self.process_noise = None
+        self.process_noise_covariance = None
+        self.observation_noise_covariance = None
 
     @staticmethod
     def _extract_state(thermometers):
@@ -147,10 +148,14 @@ class Model(config_params.Configurable):
             numpy.matlib.fill_diagonal(self.param_covariance, 2)
             self.param_covariance[self.i.f, self.i.f] = 25 # 1 sigma error 5°C
 
-        self.process_noise = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
-        numpy.matlib.fill_diagonal(self.process_noise,
+        self.process_noise_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
+        numpy.matlib.fill_diagonal(self.process_noise_covariance,
                                    self.parameter_stdev**2 * self.update_time / 3600)
-        self.process_noise[self.i.f, self.i.f] = self.temperature_stdev**2 * self.update_time / 3600
+        self.process_noise_covariance[self.i.f, self.i.f] = self.temperature_stdev**2 * self.update_time / 3600
+
+        self.observation_noise_covariance = numpy.matlib.zeros((self.i.thermometers, self.i.thermometers))
+        numpy.matlib.fill_diagonal(self.obsevation_noise_covariance,
+                                   self.thermometer_stdev**2 * 2)
 
         return self.prev_pwm
 
