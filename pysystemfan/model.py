@@ -39,7 +39,7 @@ class Model(config_params.Configurable):
 
     _params = [
         ("storage_path", None, "File where to save the model"),
-        ("parameter_stdev", 0.01, "1-sigma change per hour of parameters other"
+        ("parameter_stdev", 1e-6, "1-sigma change per hour of parameters other"
                                      "than external temperature"),
         ("temperature_stdev", 0.5, "Standard deviation of external temperature. In °C/hour"),
         ("thermometer_stdev", 0.5, "Standard deviation of thermometer measurements. In °C."),
@@ -111,15 +111,12 @@ class Model(config_params.Configurable):
 
     def predict_measurement_result(self, temperatures, activities, fans, avg_temp):
         """ Calculate the h_i functions, returns temperature derivatives. """
-        return numpy.matrix((self.param_estimate[self.i.a[i], 0] +
-                             self.param_estimate[self.i.b[i], 0] * activities[i] +
-                             self.param_estimate[self.i.c[i], 0] * (avg_temp - temperatures[i]) +
-                             self.param_estimate[self.i.d[i], 0] * (self.param_estimate[self.i.f] - temperatures[i]) +
-                             sum(self.param_estimate[self.i.e[i][j], 0] * fans[j] / 255 for j in range(self.i.fans)) * (self.param_estimate[self.i.f] - temperatures[i])
-                             for i in range(self.i.thermometers)))
-
-        #return [self.param_estimate[self.i.a[i]] +
-        #        self.param_estimate[self.i.b[i]] * activities[i]
+        return numpy.matrix([[self.param_estimate[self.i.a[i], 0] +
+                              self.param_estimate[self.i.b[i], 0] * activities[i] +
+                              self.param_estimate[self.i.c[i], 0] * (avg_temp - temperatures[i]) +
+                              self.param_estimate[self.i.d[i], 0] * (self.param_estimate[self.i.f, 0] - temperatures[i]) +
+                              sum(self.param_estimate[self.i.e[i][j], 0] * fans[j] / 255 for j in range(self.i.fans)) * (self.param_estimate[self.i.f, 0] - temperatures[i])]
+                              for i in range(self.i.thermometers)])
 
     def observation_matrix(self, temperatures, activities, fans, avg_temp):
         """ Return a matrix with partial derivatives of the observation function """
@@ -151,7 +148,7 @@ class Model(config_params.Configurable):
         if not loaded:
             # Find the inital values for the model. Mostly just guessing.
 
-            self.param_estimate = numpy.matlib.ones((self.i.param_count, 1))
+            self.param_estimate = numpy.matlib.ones((self.i.param_count, 1)) * 1e-3
             self.param_estimate[self.i.f, 0] = 21 # Initial estimate for outside temperature
 
             self.param_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
@@ -164,7 +161,7 @@ class Model(config_params.Configurable):
         self.process_noise_covariance[self.i.f, self.i.f] = self.temperature_stdev**2 * self.update_time / 3600
 
         self.observation_noise_covariance = numpy.matlib.zeros((self.i.thermometers, self.i.thermometers))
-        numpy.matlib.fill_diagonal(self.obsevation_noise_covariance,
+        numpy.matlib.fill_diagonal(self.observation_noise_covariance,
                                    self.thermometer_stdev**2 * 2)
 
         return self.prev_pwm
