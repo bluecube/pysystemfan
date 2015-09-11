@@ -4,6 +4,7 @@ import logging
 import numpy.matlib
 import json
 import math
+import time
 
 class Model(config_params.Configurable):
     """ Model that controls cooling.
@@ -51,6 +52,7 @@ class Model(config_params.Configurable):
 
         self.update_time = parent.update_time
 
+        self.prev_time = None
         self.prev_temperatures = None
         self.prev_activities = None
         self.prev_pwm = None
@@ -107,32 +109,37 @@ class Model(config_params.Configurable):
                        "param_covariance": self.param_covariance.tolist()},
                       fp)
 
-    def model_step(self, temperatures, activities, fans):
+    def predict_measurement_result(self, temperatures, activities, fans, avg_temp):
         """ Calculate the h_i functions, returns temperature derivatives. """
+        return numpy.matrix((self.param_estimate[self.i.a[i], 0] +
+                             self.param_estimate[self.i.b[i], 0] * activities[i] +
+                             self.param_estimate[self.i.c[i], 0] * (avg_temp - temperatures[i]) +
+                             self.param_estimate[self.i.d[i], 0] * (self.param_estimate[self.i.f] - temperatures[i]) +
+                             sum(self.param_estimate[self.i.e[i][j], 0] * fans[j] / 255 for j in range(self.i.fans)) * (self.param_estimate[self.i.f] - temperatures[i])
+                             for i in range(self.i.thermometers)))
+
         #return [self.param_estimate[self.i.a[i]] +
         #        self.param_estimate[self.i.b[i]] * activities[i]
 
-    def observation_matrix(self, temperatures, activities, fans):
+    def observation_matrix(self, temperatures, activities, fans, avg_temp):
         """ Return a matrix with partial derivatives of the observation function """
-
-        avg_temp = math.fsum(temperatures) / len(temperatures)
 
         ret = numpy.matlib.zeros((self.i.thermometers, self.i.param_count))
         for i in range(self.i.thermometers):
             ret[i, self.i.a[i]] = 1
             ret[i, self.i.b[i]] = activities[i]
             ret[i, self.i.c[i]] = avg_temp - temperatures[i]
-            ret[i, self.i.d[i]] = self.param_estimate[self.i.f] - temperatures[i]
+            ret[i, self.i.d[i]] = self.param_estimate[self.i.f, 0] - temperatures[i]
             for k in range(self.i.fans):
-                ret[i, self.i.e[i][k]] = fans[k] * (self.param_estimate[self.i.f] - temperatures[i]) / 255
-                ret[i, self.i.f] += fans[k] * self.param_estimate[self.i.e[i][k]] / 255
-            ret[i, self.i.f] += self.param_estimate[self.i.d[i]]
+                ret[i, self.i.e[i][k]] = fans[k] * (self.param_estimate[self.i.f, 0] - temperatures[i]) / 255
+                ret[i, self.i.f] += fans[k] * self.param_estimate[self.i.e[i][k], 0] / 255
+            ret[i, self.i.f] += self.param_estimate[self.i.d[i], 0]
 
         return ret
 
-
     def init(self, thermometers, fans):
         temperatures, activities = self._extract_state(thermometers)
+        self.prev_time = time.time()
         self.prev_temperatures = temperatures
         self.prev_activities = activities
         self.prev_pwm = [255 for fan in fans]
@@ -165,15 +172,28 @@ class Model(config_params.Configurable):
     def update(self, thermometers, fans):
         temperatures, activities = self._extract_state(thermometers)
 
+        t = time.time()
+        dt = t - self.prev_time
         avg_temperatures = [(t1 + t2) / 2 for t1, t2 in zip(self.prev_temperatures, temperatures)]
         avg_activities = [(a1 + a2) / 2 for a1, a2 in zip(self.prev_activities, activities)]
-        delta_temperatures = [t1 - t2 for t1, t2 in zip(self.prev_temperatures, temperatures)]
+        temperatures_derivative = [(t1 - t2) / dt for t1, t2 in zip(self.prev_temperatures, temperatures)]
+        avg_temp = math.fsum(avg_temperatures) / len(temperatures)
+
+        self.prev_time = t
+        self.prev_temperatures = temperatures
+        self.prev_activities = activities
 
         observation_matrix = self.observation_matrix(avg_temperatures,
                                                      avg_activities,
-                                                     self.prev_pwm)
+                                                     self.prev_pwm,
+                                                     avg_temp)
 
+        predicted_measurement_result = self.predict_measurement_result(avg_temperatures,
+                                                                       avg_activities,
+                                                                       self.prev_pwm,
+                                                                       avg_temp)
 
+        print(predicted_measurement_result)
         return self.prev_pwm
 
 class _IndexHelper:
