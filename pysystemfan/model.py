@@ -109,7 +109,7 @@ class Model(config_params.Configurable):
                        "param_covariance": self.param_covariance.tolist()},
                       fp)
 
-    def predict_measurement_result(self, temperatures, activities, fans, avg_temp):
+    def predict_measurement(self, temperatures, activities, fans, avg_temp):
         """ Calculate the h_i functions, returns temperature derivatives. """
         return numpy.matrix([[self.param_estimate[self.i.a[i], 0] +
                               self.param_estimate[self.i.b[i], 0] * activities[i] +
@@ -152,7 +152,7 @@ class Model(config_params.Configurable):
             self.param_estimate[self.i.f, 0] = 21 # Initial estimate for outside temperature
 
             self.param_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
-            numpy.matlib.fill_diagonal(self.param_covariance, 2)
+            numpy.matlib.fill_diagonal(self.param_covariance, 1e-3)
             self.param_covariance[self.i.f, self.i.f] = 25 # 1 sigma error 5°C
 
         self.process_noise_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
@@ -173,24 +173,39 @@ class Model(config_params.Configurable):
         dt = t - self.prev_time
         avg_temperatures = [(t1 + t2) / 2 for t1, t2 in zip(self.prev_temperatures, temperatures)]
         avg_activities = [(a1 + a2) / 2 for a1, a2 in zip(self.prev_activities, activities)]
-        temperatures_derivative = [(t1 - t2) / dt for t1, t2 in zip(self.prev_temperatures, temperatures)]
+        measurement = numpy.matrix([[(t1 - t2) / dt] for t1, t2 in zip(self.prev_temperatures, temperatures)])
         avg_temp = math.fsum(avg_temperatures) / len(temperatures)
 
         self.prev_time = t
         self.prev_temperatures = temperatures
         self.prev_activities = activities
 
+
+        # Kalman filter:
+
+        # 1) Predict:
+        self.param_covariance += self.process_noise_covariance
+
+        # 2) Update
+
+        predicted_measurement = self.predict_measurement(avg_temperatures,
+                                                         avg_activities,
+                                                         self.prev_pwm,
+                                                         avg_temp)
+
+        measurement_residual = measurement - predicted_measurement
+
         observation_matrix = self.observation_matrix(avg_temperatures,
                                                      avg_activities,
                                                      self.prev_pwm,
                                                      avg_temp)
 
-        predicted_measurement_result = self.predict_measurement_result(avg_temperatures,
-                                                                       avg_activities,
-                                                                       self.prev_pwm,
-                                                                       avg_temp)
+        residual_covariance = observation_matrix * self.param_covariance * observation_matrix.T + self.observation_noise_covariance
+        kalman_gain = self.param_covariance * observation_matrix.T * residual_covariance.I
+        self.param_covariance = (numpy.matlib.identity(self.i.param_count) - kalman_gain * observation_matrix) * self.param_covariance
+        self.param_estimate += kalman_gain * measurement_residual
 
-        print(predicted_measurement_result)
+        print(self.param_estimate)
         return self.prev_pwm
 
 class _IndexHelper:
