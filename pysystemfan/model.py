@@ -8,7 +8,10 @@ import math
 class Model(config_params.Configurable):
     """ Model that controls cooling.
 
-    The main equation:
+    Uses EKF to estimate parameters of the model, and then model predictive
+    control to determine the fan speeds.
+
+    The model equation:
 
     d(temp_i)/d(time) = h_i(...) = a_i + b_i * activity_i + c_i * (avg_temp - temp_i) + (d_i + sum_j(fan_j * e_i,j)) * (f - temp_i)
 
