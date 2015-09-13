@@ -211,7 +211,6 @@ class Model(config_params.Configurable):
         self.param_covariance = (numpy.matlib.identity(self.i.param_count) - kalman_gain * observation_matrix) * self.param_covariance
         self.param_estimate += kalman_gain * measurement_residual
 
-        print(self.param_estimate)
         return self.prev_pwm
 
 class _IndexHelper:
