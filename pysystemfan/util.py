@@ -9,3 +9,19 @@ class ConcatenatedLists:
 
     def __iter__(self):
         return itertools.chain.from_iterable(self._lists)
+
+class TimeoutHelper:
+    def __init__(self, time, update_interval):
+        self.limit = round(time / update_interval)
+        self.reset()
+
+    def reset(self):
+        self.counter = 0
+
+    def tick(self):
+        self.counter += 1
+        if self.counter >= self.limit:
+            self.reset()
+            return True
+        else:
+            return False

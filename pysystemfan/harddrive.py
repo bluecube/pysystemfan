@@ -1,5 +1,6 @@
 from . import config_params
 from . import thermometer
+from . import util
 
 import subprocess
 import shlex
@@ -42,8 +43,7 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         self.update_time = parent.update_time
         self._previous_stat = None
-        self._spindown_ticks = round(self.spindown_time / self.update_time)
-        self._spindown_countdown = self._spindown_ticks
+        self._spindown_timeout = util.TimeoutHelper(self.spindown_time, self.update_time)
 
         self._logger = logging.getLogger(__name__)
 
@@ -66,6 +66,7 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         raise RuntimeError("Didn't find temperature in output of {}".format(_list_to_shell(command)))
 
     def spindown(self):
+        self._logger.info("Spinning down hard drive %s", self.name)
         subprocess.check_call(["hdparm", "-y", self.path],
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
@@ -105,12 +106,8 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
             return
 
         if self.had_io():
-            self._spindown_counter = 0
-        else:
-            self._spindown_counter += 1
-
-        if self._spindown_counter >= self._spindown_ticks:
-            self._logger.info("Spinning down hard drive %s", self.name)
+            self._spindown_timeout.reset()
+        elif self._spindown_timeout.tick():
             self.spindown()
 
     def get_status(self):

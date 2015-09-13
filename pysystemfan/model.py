@@ -1,4 +1,5 @@
 from . import config_params
+from . import util
 
 import logging
 import numpy.matlib
@@ -39,6 +40,7 @@ class Model(config_params.Configurable):
 
     _params = [
         ("storage_path", None, "File where to save the model"),
+        ("save_interval", 5*60, "Inteval between saves of model parameters."),
         ("parameter_stdev", 1e-6, "1-sigma change per hour of parameters other"
                                      "than external temperature"),
         ("temperature_stdev", 0.5, "Standard deviation of external temperature. In °C/hour"),
@@ -51,6 +53,7 @@ class Model(config_params.Configurable):
         self._logger = logging.getLogger(__name__)
 
         self.update_time = parent.update_time
+        self.autosave_timeout = util.TimeoutHelper(self.save_interval, self.update_time)
 
         self.prev_time = None
         self.prev_temperatures = None
@@ -167,6 +170,9 @@ class Model(config_params.Configurable):
         return self.prev_pwm
 
     def update(self, thermometers, fans):
+        if self.autosave_timeout.tick():
+            self.save()
+
         temperatures, activities = self._extract_state(thermometers)
 
         t = time.time()
