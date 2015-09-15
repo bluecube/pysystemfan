@@ -58,27 +58,23 @@ class Controler(config_params.Configurable):
         for fan in self.fans:
             fan.set_pwm(255)
 
+    def _update(self, func):
+        for x in self.all_thermometers:
+            x.update()
+        pwms = func(self.all_thermometers, self.fans)
+        for fan, pwm in zip(self.fans, pwms):
+            assert(pwm == 0 or pwm > fan.min_pwm)
+            fan.set_pwm(pwm)
+        time.sleep(self.update_time)
+
     def run(self):
         self.status_server.set_status_callback(self.get_status)
         self.status_server.start()
 
         try:
-            for x in self.all_thermometers:
-                x.update()
-            pwms = self.model.init(self.all_thermometers, self.fans)
-            for fan, pwm in zip(self.fans, pwms):
-                assert(pwm == 0 or pwm > fan.min_pwm)
-                fan.set_pwm(pwm)
-            time.sleep(self.update_time)
-
+            self._update(self.model.init)
             while True:
-                for x in self.all_thermometers:
-                    x.update()
-                pwms = self.model.update(self.all_thermometers, self.fans)
-                for fan, pwm in zip(self.fans, pwms):
-                    assert(pwm == 0 or pwm > fan.min_pwm)
-                    fan.set_pwm(pwm)
-                time.sleep(self.update_time)
+                self._update(self.model.update)
 
         except KeyboardInterrupt:
             self._logger.info("Keyboard interrupt")
