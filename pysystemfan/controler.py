@@ -38,6 +38,8 @@ class Controler(config_params.Configurable):
         logging.basicConfig(**logging_config)
         self._logger = logging.getLogger(__name__)
 
+        self._prev_pwm = None
+
     def _load_config(self, path):
         with open(path, "r") as fp:
             config = json.load(fp)
@@ -53,30 +55,34 @@ class Controler(config_params.Configurable):
             ("fans", [x.get_status() for x in self.fans]),
             ])
 
+    def _set_pwm(self, pwms):
+        for fan, pwm in zip(self.fans, pwms):
+            assert(pwm == 0 or pwm > fan.min_pwm)
+            fan.set_pwm(pwm)
+        self._prev_pwm = pwms
+
     def _full_steam(self):
-        self._logger.info("Restoring fans to 100% power.")
-        for fan in self.fans:
-            fan.set_pwm(255)
+        self._logger.info("Setting all fans to 100% power.")
+        self._set_pwm([255 for fan in self.fans])
 
     def _check_temperatures_failsafe(self):
         for thermometer in self.all_thermometers:
             if thermometer.get_cached_temperature() > thermometer.max_temperature:
-                self._logger.error("Maximum temperature of %s exceeded (%.1f°C vs %.1f°C).",
-                                   thermometer.name, thermometer.get_cached_temperature(),
-                                   thermometer.max_temperature)
-                self._full_steam()
                 return False
         return True
 
     def _update(self, func):
         for x in self.all_thermometers:
             x.update()
-        pwms = func(self.all_thermometers, self.fans)
+
+        pwm = func(self.all_thermometers, self.fans, self._prev_pwm)
 
         if self._check_temperatures_failsafe():
-            for fan, pwm in zip(self.fans, pwms):
-                assert(pwm == 0 or pwm > fan.min_pwm)
-                fan.set_pwm(pwm)
+            self._set_pwm(pwm)
+        else:
+            self._logger.error("Temperature failsafe triggered.")
+            self._full_steam()
+
         time.sleep(self.update_time)
 
     def run(self):

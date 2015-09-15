@@ -58,7 +58,6 @@ class Model(config_params.Configurable):
         self.prev_time = None
         self.prev_temperatures = None
         self.prev_activities = None
-        self.prev_pwm = None
 
         self.param_estimate = None
         self.param_covariance = None
@@ -137,12 +136,11 @@ class Model(config_params.Configurable):
 
         return ret
 
-    def init(self, thermometers, fans):
+    def init(self, thermometers, fans, prev_pwm):
         temperatures, activities = self._extract_state(thermometers)
         self.prev_time = time.time()
         self.prev_temperatures = temperatures
         self.prev_activities = activities
-        self.prev_pwm = [0 for fan in fans]
 
         self.i = _IndexHelper(len(thermometers), len(fans))
 
@@ -167,9 +165,9 @@ class Model(config_params.Configurable):
         numpy.matlib.fill_diagonal(self.observation_noise_covariance,
                                    self.thermometer_stdev**2 * 2)
 
-        return self.prev_pwm
+        return [0 for fan in fans]
 
-    def update(self, thermometers, fans):
+    def update(self, thermometers, fans, prev_pwm):
         if self.autosave_timeout.tick():
             self.save()
 
@@ -196,14 +194,14 @@ class Model(config_params.Configurable):
 
         predicted_measurement = self.predict_measurement(avg_temperatures,
                                                          avg_activities,
-                                                         self.prev_pwm,
+                                                         prev_pwm,
                                                          avg_temp)
 
         measurement_residual = measurement - predicted_measurement
 
         observation_matrix = self.observation_matrix(avg_temperatures,
                                                      avg_activities,
-                                                     self.prev_pwm,
+                                                     prev_pwm,
                                                      avg_temp)
 
         residual_covariance = observation_matrix * self.param_covariance * observation_matrix.T + self.observation_noise_covariance
@@ -211,7 +209,7 @@ class Model(config_params.Configurable):
         self.param_covariance = (numpy.matlib.identity(self.i.param_count) - kalman_gain * observation_matrix) * self.param_covariance
         self.param_estimate += kalman_gain * measurement_residual
 
-        return self.prev_pwm
+        return prev_pwm
 
 class _IndexHelper:
     """Just a helper that gives indices to the param array based on name"""
