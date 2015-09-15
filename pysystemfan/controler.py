@@ -58,13 +58,25 @@ class Controler(config_params.Configurable):
         for fan in self.fans:
             fan.set_pwm(255)
 
+    def _check_temperatures_failsafe(self):
+        for thermometer in self.all_thermometers:
+            if thermometer.get_cached_temperature() > thermometer.max_temperature:
+                self._logger.error("Maximum temperature of %s exceeded (%.1f°C vs %.1f°C).",
+                                   thermometer.name, thermometer.get_cached_temperature(),
+                                   thermometer.max_temperature)
+                self._full_steam()
+                return False
+        return True
+
     def _update(self, func):
         for x in self.all_thermometers:
             x.update()
         pwms = func(self.all_thermometers, self.fans)
-        for fan, pwm in zip(self.fans, pwms):
-            assert(pwm == 0 or pwm > fan.min_pwm)
-            fan.set_pwm(pwm)
+
+        if self._check_temperatures_failsafe():
+            for fan, pwm in zip(self.fans, pwms):
+                assert(pwm == 0 or pwm > fan.min_pwm)
+                fan.set_pwm(pwm)
         time.sleep(self.update_time)
 
     def run(self):

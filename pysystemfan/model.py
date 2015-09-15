@@ -142,7 +142,7 @@ class Model(config_params.Configurable):
         self.prev_time = time.time()
         self.prev_temperatures = temperatures
         self.prev_activities = activities
-        self.prev_pwm = [255 for fan in fans]
+        self.prev_pwm = [0 for fan in fans]
 
         self.i = _IndexHelper(len(thermometers), len(fans))
 
