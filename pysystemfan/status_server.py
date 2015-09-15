@@ -4,6 +4,8 @@ import threading
 import http.server
 import json
 import logging
+import os.path
+import shutil
 
 class StatusServer(config_params.Configurable):
     _params = [
@@ -68,13 +70,23 @@ def _handler_factory(status_server):
             logger.log(log_level, "%s - " + fmt, self.address_string(), *args)
 
         def do_GET(self):
-            string = json.dumps(callback())
-            encoded = string.encode("utf-8")
+            if self.path in ("/", "/index.html"):
+                self.send_response(200)
+                self.send_header('Content-Type', 'text/html; charset=utf-8')
+                self.end_headers()
 
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            self.end_headers()
-            self.wfile.write(encoded)
+                dirname = os.path.dirname(__file__)
+                with open(os.path.join(dirname, "status.html"), "rb") as fp:
+                    shutil.copyfileobj(fp, self.wfile)
+            elif self.path in ("/status.json"):
+                string = json.dumps(callback())
+                encoded = string.encode("utf-8")
 
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(encoded)
+            else:
+                self.send_error(404)
 
     return Handler

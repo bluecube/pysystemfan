@@ -1,0 +1,36 @@
+<html>
+<head>
+<title>PySystemFan status</title>
+<script type="text/javascript">
+
+function update() {
+    var req = new XMLHttpRequest(); // a new request
+    req.open("GET", "/status.json", true);
+    req.send();
+    req.onreadystatechange = function() {
+        if (req.readyState != 4 || req.status != 200)
+            return;
+        display(req.responseText);
+    }
+}
+
+function display(json_data) {
+    var elem = document.getElementById("output");
+    elem.textContent = json_data
+}
+
+function init() {
+    update();
+    setInterval(update, 10000);
+}
+
+</script>
+</head>
+<body onload="init();">
+
+<div id="output">
+Output goes here
+</div>
+
+</body>
+</html>
