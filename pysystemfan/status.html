@@ -18,7 +18,7 @@ function display(json_data) {
     thermometer_rows = display_items(json_data.thermometers,
                                      function(name, data) {
                                         if (name == "temperature")
-                                            return bar_graph(data, 15, 45, data + "°C");
+                                            return bar_graph(data, 15, 55, data + "°C");
                                         else
                                             return data;
                                      });
