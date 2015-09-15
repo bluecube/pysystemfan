@@ -209,7 +209,7 @@ class Model(config_params.Configurable):
         self.param_covariance = (numpy.matlib.identity(self.i.param_count) - kalman_gain * observation_matrix) * self.param_covariance
         self.param_estimate += kalman_gain * measurement_residual
 
-        return prev_pwm
+        return [0 for fan in fans]
 
 class _IndexHelper:
     """Just a helper that gives indices to the param array based on name"""
