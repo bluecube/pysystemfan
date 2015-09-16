@@ -47,7 +47,8 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         self._logger = logging.getLogger(__name__)
 
-        super().__init__()
+        self._cached_temperature = None
+        self._cached_spinning = None
 
     def get_temperature(self):
         command = ["smartctl", "-A", self.path]
@@ -111,11 +112,16 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
             self.spindown()
 
     def get_status(self):
-        temperature, is_spinning = self._get_temp_safe()
         return collections.OrderedDict([
             ("name", self.name),
-            ("temperature", temperature),
-            ("spinning", is_spinning)])
+            ("temperature", self._cached_temperature),
+            ("spinning", self._cached_spinning)])
+
+    def get_cached_temperature(self):
+        return self._cached_temperature
+
+    def get_cached_activity(self):
+        return 1 if self._cached_spinning else 0
 
     def _get_temp_safe(self):
         """ Return temperature, is_spinning tuple."""
@@ -132,4 +138,4 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         temperature, is_spinning = self._get_temp_safe()
         self._update_spindown(is_spinning)
         self._cached_temperature = temperature
-        self._cached_activity = 1 if is_spinning else 0
+        self._cached_spinning = is_spinning

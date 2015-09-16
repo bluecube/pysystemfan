@@ -38,6 +38,7 @@ class Controler(config_params.Configurable):
         logging.basicConfig(**logging_config)
         self._logger = logging.getLogger(__name__)
 
+        self._prev_time = None
         self._prev_pwm = None
 
     def _load_config(self, path):
@@ -51,6 +52,8 @@ class Controler(config_params.Configurable):
         "Return status for the status server that can be directly jsonified"
 
         return collections.OrderedDict([
+            ("last_update", self._prev_time),
+            ("update_interval", self.update_time),
             ("thermometers", [x.get_status() for x in self.all_thermometers]),
             ("fans", [x.get_status() for x in self.fans]),
             ])
@@ -72,6 +75,7 @@ class Controler(config_params.Configurable):
         return True
 
     def _update(self, func):
+        self._prev_time = time.time()
         for x in self.all_thermometers:
             x.update()
 

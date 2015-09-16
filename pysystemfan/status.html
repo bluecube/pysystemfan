@@ -12,9 +12,13 @@ function update() {
             return;
         display(JSON.parse(req.responseText));
     }
+
+    setTimeout(update, interval * 1000);
 }
 
 function display(json_data) {
+    document.getElementById("last_update").innerHTML = new Date(json_data.last_update * 1000);
+
     thermometer_rows = display_items(json_data.thermometers,
                                      function(name, data) {
                                         if (name == "temperature")
@@ -29,6 +33,9 @@ function display(json_data) {
                                  return data;
                               });
     document.getElementById("fans").innerHTML = fans_rows;
+
+    interval = json_data.update_interval;
+    document.getElementById("update_interval").innerHTML = interval + " s";
 }
 
 function display_items(items, display_callback) {
@@ -73,9 +80,10 @@ function bar_graph(value, min, max, text) {
            '%">&nbsp;</div></div>' + text;
 }
 
+var interval = 10; // Interval between updates in seconds.
+
 function init() {
     update();
-    setInterval(update, 10000);
 }
 
 </script>
@@ -117,6 +125,9 @@ th {
 <body onload="init();">
 
 <h1>PySystemFan status</h1>
+
+<p>Last update: <span id="last_update"></span></p>
+<p>Update interval: <span id="update_interval"></span></p>
 
 <h2>Thermometers</h2>
 <table id="thermometers">
