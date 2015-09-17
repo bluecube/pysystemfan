@@ -56,6 +56,7 @@ class Controler(config_params.Configurable):
             ("update_interval", self.update_time),
             ("thermometers", [x.get_status() for x in self.all_thermometers]),
             ("fans", [x.get_status() for x in self.fans]),
+            ("model", self.model.get_status()),
             ])
 
     def _set_pwm(self, pwms):

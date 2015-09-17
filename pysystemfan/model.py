@@ -6,6 +6,7 @@ import numpy.matlib
 import json
 import math
 import time
+import collections
 
 class Model(config_params.Configurable):
     """ Model that controls cooling.
@@ -42,7 +43,7 @@ class Model(config_params.Configurable):
         ("storage_path", None, "File where to save the model"),
         ("save_interval", 5*60, "Inteval between saves of model parameters."),
         ("parameter_stdev", 1e-6, "1-sigma change per hour of parameters other"
-                                     "than external temperature"),
+                                  "than external temperature"),
         ("temperature_stdev", 0.5, "Standard deviation of external temperature. In °C/hour"),
         ("thermometer_stdev", 0.5, "Standard deviation of thermometer measurements. In °C."),
     ]
@@ -153,7 +154,7 @@ class Model(config_params.Configurable):
             self.param_estimate[self.i.f, 0] = 21 # Initial estimate for outside temperature
 
             self.param_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
-            numpy.matlib.fill_diagonal(self.param_covariance, 1e-3)
+            numpy.matlib.fill_diagonal(self.param_covariance, 1e-6)
             self.param_covariance[self.i.f, self.i.f] = 25 # 1 sigma error 5°C
 
         self.process_noise_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
@@ -210,6 +211,14 @@ class Model(config_params.Configurable):
         self.param_estimate += kalman_gain * measurement_residual
 
         return [0 for fan in fans]
+
+    def get_status(self):
+        "Return status for the status server that can be directly jsonified"
+        return collections.OrderedDict([
+            ("outside_temperature", self.param_estimate[self.i.f, 0]),
+            ("parameter_estimate", self.param_estimate.tolist()),
+            ("parameter_covariance", self.param_covariance.tolist())
+            ])
 
 class _IndexHelper:
     """Just a helper that gives indices to the param array based on name"""
