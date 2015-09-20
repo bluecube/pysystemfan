@@ -7,6 +7,7 @@ import shlex
 import os
 import collections
 import logging
+import time
 
 def _iterate_command_output(self, command):
     process = subprocess.Popen(command,
@@ -42,6 +43,7 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
             self.stat_path = "/sys/block/{}/stat".format(os.path.basename(self.path))
 
         self.update_time = parent.update_time
+        self._previous_time = None
         self._previous_stat = None
         self._spindown_timeout = util.TimeoutHelper(self.spindown_time, self.update_time)
 
@@ -49,6 +51,7 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         self._cached_temperature = None
         self._cached_spinning = None
+        self._cached_iops = None
 
     def get_temperature(self):
         command = ["smartctl", "-A", self.path]
@@ -86,36 +89,26 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         raise RuntimeError("Didn't find drive state in output of {}".format(_list_to_shell(command)))
 
-    def _get_stat(self):
+    def _get_io(self):
         with open(self.stat_path, "r") as fp:
-            return tuple(map(int, fp.read().split()))
+            stat = tuple(map(int, fp.read().split()))
 
-    def had_io(self):
-        stat = self._get_stat()
-        previous = self._previous_stat
+        had_io = stat != self._previous_stat
+        if self._previous_stat is None:
+            ops = 0
+        else:
+            ops = stat[0] - self._previous_stat[0] + stat[4] - self._previous_stat[4]
+
         self._previous_stat = stat
 
-        return stat != previous
-
-    def _update_spindown(self, is_spinning):
-        if not is_spinning:
-            # if the drive is stopped we don't need to handle spindowns
-            return
-
-        if self.spindown_time == 0:
-            # if spindowns are not enabled, we don't need to handle them
-            return
-
-        if self.had_io():
-            self._spindown_timeout.reset()
-        elif self._spindown_timeout.tick():
-            self.spindown()
+        return had_io, ops
 
     def get_status(self):
         return collections.OrderedDict([
             ("name", self.name),
             ("temperature", self._cached_temperature),
-            ("spinning", self._cached_spinning)])
+            ("spinning", self._cached_spinning),
+            ("iops", self._cached_iops)])
 
     def get_cached_temperature(self):
         return self._cached_temperature
@@ -135,7 +128,21 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         return temperature, is_spinning
 
     def update(self):
+        t = time.time()
         temperature, is_spinning = self._get_temp_safe()
-        self._update_spindown(is_spinning)
+        had_io, ops = self._get_io()
+
+        if is_spinning and self.spindown_time > 0:
+            if had_io:
+                self._spindown_timeout.reset()
+            elif self._spindown_timeout.tick():
+                self.spindown()
+
         self._cached_temperature = temperature
         self._cached_spinning = is_spinning
+        if self._previous_time is None:
+            self._cached_iops = 0
+        else:
+            self._cached_iops = ops / (t - self._previous_time)
+
+        self._previous_time = t
