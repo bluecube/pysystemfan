@@ -47,7 +47,6 @@ class Controler(config_params.Configurable):
 
         self.process_params(config)
 
-
     def get_status(self):
         "Return status for the status server that can be directly jsonified"
 
@@ -69,11 +68,13 @@ class Controler(config_params.Configurable):
         self._logger.info("Setting all fans to 100% power.")
         self._set_pwm([255 for fan in self.fans])
 
-    def _check_temperatures_failsafe(self):
+    def _set_pwm_with_failsafe(self, pwm):
         for thermometer in self.all_thermometers:
             if thermometer.get_cached_temperature() > thermometer.max_temperature:
-                return False
-        return True
+                self._logger.error("Temperature failsafe triggered.")
+                self._full_steam()
+
+        self._set_pwm(pwm)
 
     def _update(self, func):
         self._prev_time = time.time()
@@ -81,12 +82,7 @@ class Controler(config_params.Configurable):
             x.update()
 
         pwm = func(self.all_thermometers, self.fans, self._prev_pwm)
-
-        if self._check_temperatures_failsafe():
-            self._set_pwm(pwm)
-        else:
-            self._logger.error("Temperature failsafe triggered.")
-            self._full_steam()
+        self._set_pwm_with_failsafe(pwm)
 
         time.sleep(self.update_time)
 
