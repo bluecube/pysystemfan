@@ -27,7 +27,7 @@ class StatusServer(config_params.Configurable):
     def set_status_callback(self, callback):
         self._callback = callback
 
-    def start(self):
+    def __enter__(self):
         if self.enabled == "":
             return self
 
@@ -42,14 +42,17 @@ class StatusServer(config_params.Configurable):
         self._thread.start()
         return self
 
-    def stop(self):
-        if self.enabled == "":
-            return
+    def __exit__(self, *ex_info):
+        if self._thread is None:
+            assert self._http_server is None
+            return False
 
         self._http_server.shutdown()
         self._thread.join()
 
         self._logger.info("Status server stopped")
+
+        return False
 
 def _handler_factory(status_server):
     callback = status_server._callback

@@ -25,3 +25,17 @@ class TimeoutHelper:
             return True
         else:
             return False
+
+class Interrupter:
+    def __init__(self, logger):
+        self._logger = logger
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, ex_type, ex_value, ex_traceback):
+        if ex_type is KeyboardInterrupt:
+            self._logger.info("Interrupted")
+            return True
+        else:
+            return False

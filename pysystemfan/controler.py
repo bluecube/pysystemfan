@@ -10,6 +10,7 @@ import json
 import time
 import collections
 import logging
+import contextlib
 
 class Controler(config_params.Configurable):
     _params = [
@@ -84,8 +85,6 @@ class Controler(config_params.Configurable):
         pwm = self.model.init(self.all_thermometers, self.fans)
         self._set_pwm_with_failsafe(pwm)
 
-        time.sleep(self.update_time)
-
     def _update(self):
         t = time.time()
         dt = t - self._prev_time
@@ -97,22 +96,22 @@ class Controler(config_params.Configurable):
         pwm = self.model.update(self.all_thermometers, self.fans, self._prev_pwm, dt)
         self._set_pwm_with_failsafe(pwm)
 
-        time.sleep(self.update_time)
-
     def run(self):
-        self.status_server.set_status_callback(self.get_status)
-        self.status_server.start()
-
         try:
-            self._init()
-            while True:
-                self._update()
+            with contextlib.ExitStack() as stack:
+                stack.callback(self._full_steam)
 
-        except KeyboardInterrupt:
-            self._logger.info("Keyboard interrupt")
+                self._init()
+                stack.callback(self.model.save)
+
+                self.status_server.set_status_callback(self.get_status)
+                stack.enter_context(self.status_server)
+
+                stack.enter_context(util.Interrupter(self._logger))
+
+                while True:
+                    time.sleep(self.update_time)
+                    self._update()
+
         except:
             self._logger.exception("Unhandled exception")
-        finally:
-            self._full_steam()
-            self.model.save()
-            self.status_server.stop()
