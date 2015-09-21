@@ -105,12 +105,13 @@ class Model(config_params.Configurable):
     def save(self):
         self._logger.info("Saving model parameters to %s", self.storage_path)
 
+        data = {"thermometers": self.i.thermometers,
+                "fans": self.i.fans,
+                "param_estimate": self.param_estimate.tolist(),
+                "param_covariance": self.param_covariance.tolist()}
+
         with open(self.storage_path, "w") as fp:
-            json.dump({"thermometers": self.i.thermometers,
-                       "fans": self.i.fans,
-                       "param_estimate": self.param_estimate.tolist(),
-                       "param_covariance": self.param_covariance.tolist()},
-                      fp)
+            json.dump(data, fp)
 
     def predict_measurement(self, temperatures, activities, fans, avg_temp):
         """ Calculate the h_i functions, returns temperature derivatives. """
