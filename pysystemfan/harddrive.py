@@ -7,7 +7,6 @@ import shlex
 import os
 import collections
 import logging
-import time
 
 def _iterate_command_output(self, command):
     process = subprocess.Popen(command,
@@ -43,7 +42,6 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
             self.stat_path = "/sys/block/{}/stat".format(os.path.basename(self.path))
 
         self.update_time = parent.update_time
-        self._previous_time = None
         self._previous_stat = None
         self._spindown_timeout = util.TimeoutHelper(self.spindown_time, self.update_time)
 
@@ -89,10 +87,12 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         raise RuntimeError("Didn't find drive state in output of {}".format(_list_to_shell(command)))
 
-    def _get_io(self):
+    def _get_stat(self):
         with open(self.stat_path, "r") as fp:
-            stat = tuple(map(int, fp.read().split()))
+            return tuple(map(int, fp.read().split()))
 
+    def _get_io(self):
+        stat = self._get_stat()
         had_io = stat != self._previous_stat
         if self._previous_stat is None:
             ops = 0
@@ -127,8 +127,15 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         return temperature, is_spinning
 
-    def update(self):
-        t = time.time()
+    def init(self):
+        temperature, is_spinning = self._get_temp_safe()
+        self._previous_stat = self._get_stat()
+
+        self._cached_temperature = temperature
+        self._cached_spinning = is_spinning
+        self._cached_iops = 0
+
+    def update(self, dt):
         temperature, is_spinning = self._get_temp_safe()
         had_io, ops = self._get_io()
 
@@ -140,9 +147,4 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         self._cached_temperature = temperature
         self._cached_spinning = is_spinning
-        if self._previous_time is None:
-            self._cached_iops = 0
-        else:
-            self._cached_iops = ops / (t - self._previous_time)
-
-        self._previous_time = t
+        self._cached_iops = ops / dt

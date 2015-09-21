@@ -76,12 +76,25 @@ class Controler(config_params.Configurable):
 
         self._set_pwm(pwm)
 
-    def _update(self, func):
+    def _init(self):
         self._prev_time = time.time()
         for x in self.all_thermometers:
-            x.update()
+            x.init()
 
-        pwm = func(self.all_thermometers, self.fans, self._prev_pwm)
+        pwm = self.model.init(self.all_thermometers, self.fans)
+        self._set_pwm_with_failsafe(pwm)
+
+        time.sleep(self.update_time)
+
+    def _update(self):
+        t = time.time()
+        dt = t - self._prev_time
+        self._prev_time = t
+
+        for x in self.all_thermometers:
+            x.update(dt)
+
+        pwm = self.model.update(self.all_thermometers, self.fans, self._prev_pwm, dt)
         self._set_pwm_with_failsafe(pwm)
 
         time.sleep(self.update_time)
@@ -91,9 +104,9 @@ class Controler(config_params.Configurable):
         self.status_server.start()
 
         try:
-            self._update(self.model.init)
+            self._init()
             while True:
-                self._update(self.model.update)
+                self._update()
 
         except KeyboardInterrupt:
             self._logger.info("Keyboard interrupt")

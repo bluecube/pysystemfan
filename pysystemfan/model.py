@@ -137,7 +137,7 @@ class Model(config_params.Configurable):
 
         return ret
 
-    def init(self, thermometers, fans, prev_pwm):
+    def init(self, thermometers, fans):
         temperatures, activities = self._extract_state(thermometers)
         self.prev_time = time.time()
         self.prev_temperatures = temperatures
@@ -168,20 +168,17 @@ class Model(config_params.Configurable):
 
         return [0 for fan in fans]
 
-    def update(self, thermometers, fans, prev_pwm):
+    def update(self, thermometers, fans, prev_pwm, dt):
         if self.autosave_timeout.tick():
             self.save()
 
         temperatures, activities = self._extract_state(thermometers)
 
-        t = time.time()
-        dt = t - self.prev_time
         avg_temperatures = [(t1 + t2) / 2 for t1, t2 in zip(self.prev_temperatures, temperatures)]
         avg_activities = [(a1 + a2) / 2 for a1, a2 in zip(self.prev_activities, activities)]
         measurement = numpy.matrix([[(t1 - t2) / dt] for t1, t2 in zip(self.prev_temperatures, temperatures)])
         avg_temp = math.fsum(avg_temperatures) / len(temperatures)
 
-        self.prev_time = t
         self.prev_temperatures = temperatures
         self.prev_activities = activities
 

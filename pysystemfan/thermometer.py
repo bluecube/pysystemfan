@@ -23,8 +23,14 @@ class Thermometer(config_params.Configurable):
         """ Returns a dict with current cached status. """
         raise NotImplementedError()
 
-    def update(self):
-        """ Do any periodic tasks necessary, update cached temperature and activity """
+    def init(self):
+        """ Do the first update. Must set the cached values the same way
+        that update does. """
+        self.update(None)
+
+    def update(self, dt):
+        """ Do any periodic tasks necessary, update cached temperature and activity.
+        dt is time since the last update. """
         raise NotImplementedError()
 
 class SystemThermometer(Thermometer, config_params.Configurable):
@@ -52,6 +58,6 @@ class SystemThermometer(Thermometer, config_params.Configurable):
     def get_cached_activity(self):
         return self._cached_activity
 
-    def update(self):
+    def update(self, dt):
         self._cached_temperature = self.get_temperature()
         self._cached_activity = os.getloadavg()[0]
