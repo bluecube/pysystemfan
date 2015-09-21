@@ -36,7 +36,8 @@ class StatusServer(config_params.Configurable):
         self._http_server = http.server.HTTPServer((self.bind, self.port),
                                                    _handler_factory(self))
         self._thread = threading.Thread(target=self._http_server.serve_forever,
-                                        name="status server")
+                                        name="status server",
+                                        daemon=True)
 
         self._thread.start()
         return self
