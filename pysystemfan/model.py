@@ -138,7 +138,24 @@ class Model(config_params.Configurable):
 
         return ret
 
-    def init(self, thermometers, fans):
+    def _add_temperature_measurement(self, temp, variance):
+        self._logger.info("Adding external temperature observation %d°C, variance %d", temp, variance)
+
+        measurement_residual = temp - self.param_estimate[self.i.f, 0]
+
+        # Observation matrix is a row vector with zeros and a single one on self.i.f-th position
+
+        # Technically this should be a 1x1 matrix ...
+        residual_covariance = self.param_covariance[self.i.f, self.i.f] + variance
+
+        kalman_gain = self.param_covariance[:,self.i.f] / residual_covariance
+
+        x = numpy.matlib.identity(self.i.param_count)
+        x[:,self.i.f] -= kalman_gain
+        self.param_covariance = x * self.param_covariance
+        self.param_estimate += kalman_gain * measurement_residual
+
+    def init(self, thermometers, fans, **kwargs):
         temperatures, activities = self._extract_state(thermometers)
         self.prev_time = time.time()
         self.prev_temperatures = temperatures
@@ -157,6 +174,10 @@ class Model(config_params.Configurable):
             self.param_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
             numpy.matlib.fill_diagonal(self.param_covariance, 1e-6)
             self.param_covariance[self.i.f, self.i.f] = 25 # 1 sigma error 5°C
+
+        print(kwargs)
+        if "outside_temperature" in kwargs:
+            self._add_temperature_measurement(kwargs["outside_temperature"], kwargs.get("outside_temperature_variance", 1))
 
         self.process_noise_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
         numpy.matlib.fill_diagonal(self.process_noise_covariance,

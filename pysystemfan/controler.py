@@ -25,7 +25,7 @@ class Controler(config_params.Configurable):
         ("harddrives", config_params.ListOf(harddrive.Harddrive), ""),
     ]
 
-    def __init__(self):
+    def __init__(self, **extra_args):
         self._load_config("pysystemfan.json")
         self.all_thermometers = util.ConcatenatedLists(self.thermometers,
                                                        self.harddrives)
@@ -41,6 +41,8 @@ class Controler(config_params.Configurable):
 
         self._prev_time = None
         self._prev_pwm = None
+
+        self._extra_args = extra_args
 
     def _load_config(self, path):
         with open(path, "r") as fp:
@@ -82,7 +84,7 @@ class Controler(config_params.Configurable):
         for x in self.all_thermometers:
             x.init()
 
-        pwm = self.model.init(self.all_thermometers, self.fans)
+        pwm = self.model.init(self.all_thermometers, self.fans, **self._extra_args)
         self._set_pwm_with_failsafe(pwm)
 
     def _update(self):
