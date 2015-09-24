@@ -175,7 +175,6 @@ class Model(config_params.Configurable):
             numpy.matlib.fill_diagonal(self.param_covariance, 1e-6)
             self.param_covariance[self.i.f, self.i.f] = 25 # 1 sigma error 5°C
 
-        print(kwargs)
         if "outside_temperature" in kwargs:
             self._add_temperature_measurement(kwargs["outside_temperature"], kwargs.get("outside_temperature_variance", 1))
 
