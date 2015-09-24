@@ -236,7 +236,7 @@ class Model(config_params.Configurable):
         return collections.OrderedDict([
             ("outside_temperature", self.param_estimate[self.i.f, 0]),
             ("parameter_estimate", self.param_estimate.tolist()),
-            ("parameter_covariance", self.param_covariance.tolist())
+            ("parameter_covariance_logdet", numpy.linalg.slogdet(self.param_covariance)[1])
             ])
 
 class _IndexHelper:

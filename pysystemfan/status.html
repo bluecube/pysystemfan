@@ -19,19 +19,10 @@ function update() {
 function display(json_data) {
     document.getElementById("last_update").innerHTML = new Date(json_data.last_update * 1000);
 
-    thermometer_rows = display_items(json_data.thermometers,
-                                     function(name, data) {
-                                        if (name == "temperature")
-                                            return temperature_graph(data);
-                                        else
-                                            return data;
-                                     });
+    thermometer_rows = display_items(json_data.thermometers);
     document.getElementById("thermometers").innerHTML = thermometer_rows;
 
-    fans_rows = display_items(json_data.fans,
-                              function(name, data) {
-                                 return data;
-                              });
+    fans_rows = display_items(json_data.fans);
     document.getElementById("fans").innerHTML = fans_rows;
 
     model_rows = display_model(json_data.model);
@@ -41,7 +32,7 @@ function display(json_data) {
     document.getElementById("update_interval").innerHTML = interval + " s";
 }
 
-function display_items(items, display_callback) {
+function display_items(items) {
     var keys = {};
     for (var item in items) {
         for (var key in items[item])
@@ -54,7 +45,7 @@ function display_items(items, display_callback) {
 
     var ret = "<tr><th>&nbsp;</th>";
     for (var item in items)
-        ret += "<th>" + display_callback("name", items[item].name) + "</th>";
+        ret += "<th>" + items[item].name + "</th>";
     ret += "</tr>";
 
     for (var key in keys) {
@@ -62,7 +53,7 @@ function display_items(items, display_callback) {
         for (var item in items)
         {
             if (key in items[item])
-                ret += "<td>" + display_callback(key, items[item][key]) + "</td>";
+                ret += "<td>" + display_value(key, items[item][key]) + "</td>";
             else
                 ret += "<td>&nbsp;</td>";
         }
@@ -76,17 +67,24 @@ function display_model(data) {
     var ret = ""
     for (var key in data) {
         ret += "<tr><th>" + key + "</th><td>";
-        if (key == "outside_temperature")
-            ret += temperature_graph(data[key])
-        else if (key == "parameter_estimate")
-            ret += matrix(data[key]);
-        else if (key == "parameter_covariance")
+        if (key == "parameter_estimate")
             ret += matrix(data[key]);
         else
-            ret += data[key];
+            ret += display_value(key, data[key]);
         ret += "</td></tr>";
     }
     return ret;
+}
+
+function display_value(name, value) {
+    if (value === null)
+        return "&nbsp;";
+    else if (name.indexOf("temperature") > -1)
+        return temperature_graph(value);
+    else if (value.constructor == Number)
+        return value.toFixed(2);
+    else
+        return value;
 }
 
 function temperature_graph(value) {
