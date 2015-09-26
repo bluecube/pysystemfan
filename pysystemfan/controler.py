@@ -76,6 +76,7 @@ class Controler(config_params.Configurable):
             if thermometer.get_cached_temperature() > thermometer.max_temperature:
                 self._logger.error("Temperature failsafe triggered.")
                 self._full_steam()
+                return
 
         self._set_pwm(pwm)
 
