@@ -17,8 +17,6 @@ class Fan(config_params.Configurable):
         if not len(self.name):
             self.name = self.get_automatic_name()
 
-        self._running = self.get_rpm() > 0
-
     def get_rpm(self):
         with open(self.rpm_path, "r") as fp:
             return int(fp.readline())
