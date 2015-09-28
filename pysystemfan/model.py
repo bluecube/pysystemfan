@@ -44,7 +44,7 @@ class Model(config_params.Configurable):
         ("save_interval", 5*60, "Inteval between saves of model parameters."),
         ("parameter_stdev", 1e-6, "1-sigma change per day of parameters other"
                                   "than external temperature"),
-        ("temperature_stdev", 1, "Standard deviation of external temperature. In °C/day"),
+        ("temperature_stdev", 0.1, "Standard deviation of external temperature. In °C/hour"),
         ("thermometer_stdev", 0.5, "Standard deviation of thermometer measurements. In °C."),
     ]
 
@@ -172,7 +172,7 @@ class Model(config_params.Configurable):
             self.param_estimate[self.i.f, 0] = 21 # Initial estimate for outside temperature
 
             self.param_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
-            numpy.matlib.fill_diagonal(self.param_covariance, 1e-6)
+            numpy.matlib.fill_diagonal(self.param_covariance, 25e-8)
             self.param_covariance[self.i.f, self.i.f] = 25 # 1 sigma error 5°C
 
         if "outside_temperature" in kwargs:
@@ -181,7 +181,7 @@ class Model(config_params.Configurable):
         self.process_noise_covariance = numpy.matlib.zeros((self.i.param_count, self.i.param_count))
         numpy.matlib.fill_diagonal(self.process_noise_covariance,
                                    self.parameter_stdev**2 * self.update_time / (24 * 3600))
-        self.process_noise_covariance[self.i.f, self.i.f] = self.temperature_stdev**2 * self.update_time / (24 * 3600)
+        self.process_noise_covariance[self.i.f, self.i.f] = self.temperature_stdev**2 * self.update_time / 3600
 
         self.observation_noise_covariance = numpy.matlib.zeros((self.i.thermometers, self.i.thermometers))
         numpy.matlib.fill_diagonal(self.observation_noise_covariance,
