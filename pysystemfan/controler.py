@@ -1,5 +1,6 @@
 from . import config_params
 from . import model
+from . import history
 from . import fan
 from . import thermometer
 from . import harddrive
@@ -20,6 +21,7 @@ class Controler(config_params.Configurable):
         ("update_time", 30, "Time between updates in seconds."),
         ("status_server", config_params.InstanceOf(status_server.StatusServer), ""),
         ("model", config_params.InstanceOf(model.Model), ""),
+        ("history", config_params.InstanceOf(history.History, {}), ""),
         ("fans", config_params.ListOf(fan.Fan), ""),
         ("thermometers", config_params.ListOf(thermometer.SystemThermometer), ""),
         ("harddrives", config_params.ListOf(harddrive.Harddrive), ""),
@@ -88,6 +90,8 @@ class Controler(config_params.Configurable):
         pwm = self.model.init(self.all_thermometers, self.fans, **self._extra_args)
         self._set_pwm_with_failsafe(pwm)
 
+        self.history.init(self.all_thermometers, self.fans)
+
     def _update(self):
         t = time.time()
         dt = t - self._prev_time
@@ -98,6 +102,8 @@ class Controler(config_params.Configurable):
 
         pwm = self.model.update(self.all_thermometers, self.fans, self._prev_pwm, dt)
         self._set_pwm_with_failsafe(pwm)
+
+        self.history.update(self.all_thermometers, self.fans)
 
     def run(self):
         try:
