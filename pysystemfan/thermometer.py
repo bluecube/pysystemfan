@@ -61,3 +61,30 @@ class SystemThermometer(Thermometer, config_params.Configurable):
     def update(self, dt):
         self._cached_temperature = self.get_temperature()
         self._cached_activity = os.getloadavg()[0]
+
+class MockThermometer(Thermometer, config_params.Configurable):
+    _params = [
+        ("value", 30, "Temperature shown."),
+        ("activity", 0.5, "Activity shown."),
+    ]
+
+    def __init__(self, parent, params):
+        self.process_params(params)
+
+    def get_temperature(self):
+        return self.value
+
+    def get_status(self):
+        return collections.OrderedDict([
+            ("name", self.name),
+            ("temperature", self.value),
+            ("activity", self.activity)])
+
+    def get_cached_temperature(self):
+        return self.value
+
+    def get_cached_activity(self):
+        return self.activity
+
+    def update(self, dt):
+        pass

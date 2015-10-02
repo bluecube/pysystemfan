@@ -43,16 +43,17 @@ class Configurable:
 
         for name, default, description in self._params_iter():
             if isinstance(default, ListOf):
-                value = [default.cls(self, item) for item in params.get(name, [])]
+                value = default.load(self, params.get(name, []))
             elif isinstance(default, InstanceOf):
-                if default.missing == Exception:
-                    value = default.cls(self, params.get(name))
+                if default.missing == Exception and name not in params:
+                    value = None
                 else:
-                    value = default.cls(self, params.get(name, default.missing))
+                    value = default.load(self, params.get(name, default.missing))
             else:
                 value = params.get(name, default)
-                if value is None:
-                    raise RuntimeError("Value of parameter " + name + " must be set")
+
+            if value is None:
+                raise RuntimeError("Value of parameter " + name + " must be set")
 
             setattr(self, name, value)
             used_names.add(name)
@@ -66,22 +67,55 @@ class Configurable:
         for name, default, desription in self._params_iter():
             value = getattr(self, name)
 
-            if isinstance(default, ListOf):
-                ret[name] = [item.dump_params(include_defaults) for item in value]
-            elif isinstance(default, InstanceOf):
-                dumped = value.dump_params(include_defaults)
-                if include_defaults or len(dumped) > 0:
-                    ret[name] = dumped
+            if isinstance(default, ListOf) or isinstance(default, InstanceOf):
+                default.dump(value, include_defaults)
             elif include_defaults or value != default:
                 ret[name] = value
 
         return ret
 
 class ListOf:
-    def __init__(self, cls):
-        self.cls = cls
+    def __init__(self, classes):
+        self.classes = classes
+
+    def load(self, parent, data):
+        return [InstanceOf._load(parent, item, self.classes) for item in data]
+
+    def dump(self, data, include_defaults):
+        if not include_defaults and not len(data):
+            return []
+        return [InstanceOf.dump(item, include_defaults) for item in data]
 
 class InstanceOf:
-    def __init__(self, cls, missing = Exception):
-        self.cls = cls
+    def __init__(self, classes, missing = Exception):
+        self.classes = classes
         self.missing = missing
+
+    def load(self, parent, data):
+        return self._load(parent, data, self.classes)
+
+    @staticmethod
+    def _load(parent, data, classes):
+        if len(classes) == 1:
+            cls = classes[0]
+        else:
+            try:
+                cls_name = data.pop("class")
+            except KeyError:
+                raise RuntimeError("Value of parameter " + name + " must be set") from None
+
+            cls = None
+            for candidate in classes:
+                if candidate.__name__ == cls_name:
+                    cls = candidate
+                    break
+            if cls is None:
+                raise RuntimeError("No matching class found. Possible values are: " +
+                                   ", ".join(candidate.__name__ for candidate in classes)) from None
+
+        return cls(parent, data)
+
+    @staticmethod
+    def dump(data, include_defaults):
+        ret = data.dump_params()
+        ret["class"] = ret.__class__.__name__

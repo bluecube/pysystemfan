@@ -19,18 +19,18 @@ class Controler(config_params.Configurable):
         ("log_level", "WARNING", "Minimal logging level. "
                                  "One of DEBUG, INFO, WARNING, ERROR, CRITICAL"),
         ("update_time", 30, "Time between updates in seconds."),
-        ("status_server", config_params.InstanceOf(status_server.StatusServer), ""),
-        ("model", config_params.InstanceOf(model.Model), ""),
-        ("history", config_params.InstanceOf(history.History, {}), ""),
-        ("fans", config_params.ListOf(fan.Fan), ""),
-        ("thermometers", config_params.ListOf(thermometer.SystemThermometer), ""),
-        ("harddrives", config_params.ListOf(harddrive.Harddrive), ""),
+        ("status_server", config_params.InstanceOf([status_server.StatusServer]), ""),
+        ("model", config_params.InstanceOf([model.Model]), ""),
+        ("history", config_params.InstanceOf([history.History], {}), ""),
+        ("fans", config_params.ListOf([fan.SystemFan,
+                                       fan.MockFan]), ""),
+        ("thermometers", config_params.ListOf([thermometer.SystemThermometer,
+                                               harddrive.Harddrive,
+                                               thermometer.MockThermometer]), ""),
     ]
 
     def __init__(self, **extra_args):
         self._load_config("pysystemfan.json")
-        self.all_thermometers = util.ConcatenatedLists(self.thermometers,
-                                                       self.harddrives)
         logging_config = {
             "level": logging.getLevelName(self.log_level),
             "format": "%(asctime)s %(name)s: %(message)s",
@@ -58,7 +58,7 @@ class Controler(config_params.Configurable):
         return collections.OrderedDict([
             ("last_update", self._prev_time),
             ("update_interval", self.update_time),
-            ("thermometers", [x.get_status() for x in self.all_thermometers]),
+            ("thermometers", [x.get_status() for x in self.thermometers]),
             ("fans", [x.get_status() for x in self.fans]),
             ("model", self.model.get_status()),
             ])
@@ -74,7 +74,7 @@ class Controler(config_params.Configurable):
         self._set_pwm([255 for fan in self.fans])
 
     def _set_pwm_with_failsafe(self, pwm):
-        for thermometer in self.all_thermometers:
+        for thermometer in self.thermometers:
             if thermometer.get_cached_temperature() > thermometer.max_temperature:
                 self._logger.error("Temperature failsafe triggered.")
                 self._full_steam()
@@ -84,26 +84,26 @@ class Controler(config_params.Configurable):
 
     def _init(self):
         self._prev_time = time.time()
-        for x in self.all_thermometers:
+        for x in self.thermometers:
             x.init()
 
-        pwm = self.model.init(self.all_thermometers, self.fans, **self._extra_args)
+        pwm = self.model.init(self.thermometers, self.fans, **self._extra_args)
         self._set_pwm_with_failsafe(pwm)
 
-        self.history.init(self.all_thermometers, self.fans)
+        self.history.init(self.thermometers, self.fans)
 
     def _update(self):
         t = time.time()
         dt = t - self._prev_time
         self._prev_time = t
 
-        for x in self.all_thermometers:
+        for x in self.thermometers:
             x.update(dt)
 
-        pwm = self.model.update(self.all_thermometers, self.fans, self._prev_pwm, dt)
+        pwm = self.model.update(self.thermometers, self.fans, self._prev_pwm, dt)
         self._set_pwm_with_failsafe(pwm)
 
-        self.history.update(self.all_thermometers, self.fans)
+        self.history.update(self.thermometers, self.fans)
 
     def run(self):
         try:
