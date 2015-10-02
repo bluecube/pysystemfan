@@ -38,27 +38,20 @@ class History(config_params.Configurable):
 
                 row_dict[index] = v
 
-        return [row_dict.get(i) for i in range(max(row_dict) + 1)]
+        self._buffer.append([row_dict.get(i) for i in range(max(row_dict) + 1)])
 
     def init(self, thermometers, fans):
-        self._buffer = collections.deque(round(self.storage_time / self.update_time))
+        self._buffer = collections.deque(maxlen = round(self.storage_time / self.update_time))
         labels = {}
 
         thermometer_statuses = [thermometer.get_status() for thermometer in thermometers]
-
-        self._buffers = collections.deque(round(self.storage_time / self.update_time))
         self._labels = None
 
-        self.update(thermometers, fans)
+        #self.update(thermometers, fans)
 
     def update(self, thermometers, fans):
         row = []
-        for thermometer in thermometers:
-            row.append(thermometer.get_status())
-        for fan in fans:
-            row.append(fan.get_status)
-
-        self._buffer.append(
-
-    def get_status(self):
-        
+        #for thermometer in thermometers:
+        #    row.append(thermometer.get_status())
+        #for fan in fans:
+        #    row.append(fan.get_status)
