@@ -114,6 +114,7 @@ class Controler(config_params.Configurable):
                 stack.callback(self.model.save)
 
                 self.status_server.set_status_callback(self.get_status)
+                self.status_server.set_history_callback(self.history.get_status)
                 stack.enter_context(self.status_server)
 
                 stack.enter_context(util.Interrupter(self._logger))

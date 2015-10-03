@@ -20,12 +20,16 @@ class StatusServer(config_params.Configurable):
         self.process_params(params)
         self._http_server = None
         self._thread = None
-        self._callback = None
+        self._status_callback = None
+        self._history_callback = None
         self._logger = logging.getLogger(__name__)
         self._request_level = logging.getLevelName(self.request_log_level)
 
     def set_status_callback(self, callback):
-        self._callback = callback
+        self._status_callback = callback
+
+    def set_history_callback(self, callback):
+        self._history_callback = callback
 
     def __enter__(self):
         if self.enabled == "":
@@ -55,7 +59,8 @@ class StatusServer(config_params.Configurable):
         return False
 
 def _handler_factory(status_server):
-    callback = status_server._callback
+    status_callback = status_server._status_callback
+    history_callback = status_server._history_callback
     logger = status_server._logger
     request_level = status_server._request_level
 
@@ -83,7 +88,15 @@ def _handler_factory(status_server):
                 with open(os.path.join(dirname, "status.html"), "rb") as fp:
                     shutil.copyfileobj(fp, self.wfile)
             elif self.path in ("/status.json"):
-                string = json.dumps(callback())
+                string = json.dumps(status_callback())
+                encoded = string.encode("utf-8")
+
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json; charset=utf-8')
+                self.end_headers()
+                self.wfile.write(encoded)
+            elif self.path in ("/history.json"):
+                string = json.dumps(history_callback())
                 encoded = string.encode("utf-8")
 
                 self.send_response(200)

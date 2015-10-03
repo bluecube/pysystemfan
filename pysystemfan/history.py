@@ -2,6 +2,8 @@ from . import config_params
 
 import collections
 import logging
+import itertools
+import time
 
 class History(config_params.Configurable):
     """ Stores past data in a in-memory buffer and optionaly also in a file. """
@@ -22,15 +24,22 @@ class History(config_params.Configurable):
         self._buffer = None
         self._labels = None
 
-    def _update(statuses):
-        row_dict = {}
-        for status in statuses:
+    def init(self, thermometers, fans):
+        self._buffer = collections.deque(maxlen = round(self.storage_time / self.update_time))
+        self._labels = collections.OrderedDict([(("time",), 0)])
+
+        self.update(thermometers, fans)
+
+    def update(self, thermometers, fans):
+        row_dict = {0: time.time()}
+        for x in itertools.chain(thermometers, fans):
+            status = x.get_status()
             name = status["name"]
             for k, v in status.items():
                 if k == "name":
                     continue
                 key = (name, k)
-                if key not in labels:
+                if key not in self._labels:
                     index = len(self._labels)
                     self._labels[key] = index
                 else:
@@ -40,18 +49,10 @@ class History(config_params.Configurable):
 
         self._buffer.append([row_dict.get(i) for i in range(max(row_dict) + 1)])
 
-    def init(self, thermometers, fans):
-        self._buffer = collections.deque(maxlen = round(self.storage_time / self.update_time))
-        labels = {}
-
-        thermometer_statuses = [thermometer.get_status() for thermometer in thermometers]
-        self._labels = None
-
-        #self.update(thermometers, fans)
-
-    def update(self, thermometers, fans):
-        row = []
-        #for thermometer in thermometers:
-        #    row.append(thermometer.get_status())
-        #for fan in fans:
-        #    row.append(fan.get_status)
+    def get_status(self):
+        labels = collections.OrderedDict()
+        for k, v in self._labels.items():
+            labels[" - ".join(k)] = v
+        return collections.OrderedDict([
+            ("labels", labels),
+            ("values", list(self._buffer))])
