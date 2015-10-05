@@ -50,9 +50,6 @@ class History(config_params.Configurable):
         self._buffer.append([row_dict.get(i) for i in range(max(row_dict) + 1)])
 
     def get_status(self):
-        labels = collections.OrderedDict()
-        for k, v in self._labels.items():
-            labels[" - ".join(k)] = v
         return collections.OrderedDict([
-            ("labels", labels),
+            ("labels", list(self._labels)),
             ("values", list(self._buffer))])

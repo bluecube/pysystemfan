@@ -3,17 +3,28 @@
 <title>PySystemFan status</title>
 <script type="text/javascript">
 
+min_temperature = 15;
+max_temperature = 55;
+
 function update() {
+    json_request("status.json", display);
+
+    if (document.getElementById("show_history").checked) {
+        json_request("history.json", display_history);
+    }
+
+    setTimeout(update, interval * 1000);
+}
+
+function json_request(url, callback) {
     var req = new XMLHttpRequest(); // a new request
-    req.open("GET", "/status.json", true);
+    req.open("GET", url, true);
     req.send();
     req.onreadystatechange = function() {
         if (req.readyState != 4 || req.status != 200)
             return;
-        display(JSON.parse(req.responseText));
+        callback(JSON.parse(req.responseText));
     }
-
-    setTimeout(update, interval * 1000);
 }
 
 function display(json_data) {
@@ -88,7 +99,9 @@ function display_value(name, value) {
 }
 
 function temperature_graph(value) {
-    return bar_graph(value, 15, 55, value.toFixed(1) + "°C");
+    return bar_graph(value,
+                     min_temperature, max_temperature,
+                     value.toFixed(1) + "°C");
 }
 
 function bar_graph(value, min, max, text) {
@@ -115,6 +128,79 @@ function matrix(value) {
     }
     ret += "</table>";
     return ret;
+}
+
+function display_history(data) {
+    var variables = {};
+
+    for (var i in data.labels) {
+        if (data.labels[i].length == 1)
+            continue;
+
+        variables[data.labels[i][1]] = true;
+    }
+
+    var html = "";
+    for (var variable in variables) {
+        html += "<tr><th>" + variable + "</th><td><canvas id=\"history_canvas_" +
+                 variable + "\">Canvas not supported</canvas></td></tr>";
+    }
+    html += "<tr><th>legend</th><td>";
+    html += "&nbsp;";
+    html += "</td></tr>";
+
+    first_time = data.values[0][0];
+    last_time = data.values[data.values.length - 1][0];
+
+    document.getElementById("history").innerHTML = html;
+
+    for (var variable in variables) {
+        var ctx = document.getElementById("history_canvas_" + variable).getContext("2d");
+        if (variable = "temperature")
+            plot_axes(ctx, first_time, last_time, min_temperature, max_temperature);
+        else
+            plot_axes(ctx, first_time, last_time, 0, 1);
+    }
+
+    /*
+    legend_rows = display_legend(data.history_legend);
+    document.getElementById("model").innerHTML = model_rows;
+    document.getElementById("history_legend").set_
+
+    */
+}
+
+function log10round(val) {
+    return Math.exp(Math.LN10 * Math.round(Math.log(val) / Math.LN10));
+}
+
+function axes(ctx, tmin, tmax, ymin, ymax) {
+    pxgridsize = 50; // How many pixels between grid lines
+
+    var w = 100; // TODO
+    var h = 50; // TODO
+
+    tminDate = new Date(tmin * 1000);
+    tmaxDate = new Date(tmax * 1000);
+
+    dy = ymax - ymin;
+    ay = -h / dy;
+    by = -ymax * ay;
+
+    // ygrid * h / pxgridsize ~~ dy
+    // We want a grid line approximately every pxgridsize pixels
+
+    ygrid = log10round(dy * pxgridsize / h);
+}
+
+function show_history_changed(checkbox) {
+    var section = document.getElementById("history_container");
+    if (checkbox.checked) {
+        section.style.display = "block";
+        json_request("history.json", display_history);
+    } else {
+        section.style.display = "none";
+    }
 }
 
 var interval = 10; // Interval between updates in seconds.
@@ -182,7 +268,17 @@ table.matrix td {
 <table id="model">
 </table>
 
-<p><a href="status.json">JSON version</a></p>
+<p><input type="checkbox" id="show_history" onchange="show_history_changed(this)" /><label for="show_history">Show history</label></p>
+
+<div id="history_container" style="display: none">
+<h2>History</h2>
+
+<table id="history">
+</table>
+
+</div>
+
+<p><a href="status.json">status.json</a>, <a href="history.json">history.json</a></p>
 
 </body>
 </html>
