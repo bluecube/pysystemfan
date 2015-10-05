@@ -12,7 +12,7 @@
 
     "fans": [
         {
-            "class": "Fan",
+            "class": "SystemFan",
             "name": "Fan",
             "pwm_path": "/sys/class/hwmon/hwmon2/pwm1",
             "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input"
