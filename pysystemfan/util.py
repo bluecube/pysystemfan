@@ -1,4 +1,5 @@
 import itertools
+import logging
 
 class TimeoutHelper:
     def __init__(self, time, update_interval):
@@ -17,8 +18,8 @@ class TimeoutHelper:
             return False
 
 class Interrupter:
-    def __init__(self, logger):
-        self._logger = logger
+    def __init__(self):
+        self._logger = logging.getLogger(__name__)
 
     def __enter__(self):
         return self

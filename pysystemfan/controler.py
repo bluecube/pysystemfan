@@ -5,13 +5,11 @@ from . import fan
 from . import thermometer
 from . import harddrive
 from . import status_server
-from . import util
 
 import json
 import time
 import collections
 import logging
-import contextlib
 
 class Controler(config_params.Configurable):
     _params = [
@@ -82,7 +80,7 @@ class Controler(config_params.Configurable):
 
         self._set_pwm(pwm)
 
-    def _init(self):
+    def init(self):
         self._prev_time = time.time()
         for x in self.thermometers:
             x.init()
@@ -92,7 +90,7 @@ class Controler(config_params.Configurable):
 
         self.history.init(self.thermometers, self.fans)
 
-    def _update(self):
+    def update(self):
         t = time.time()
         dt = t - self._prev_time
         self._prev_time = t
@@ -106,22 +104,12 @@ class Controler(config_params.Configurable):
         self.history.update(self.thermometers, self.fans)
 
     def run(self):
-        try:
-            with contextlib.ExitStack() as stack:
-                stack.callback(self._full_steam)
+        """ Run updates in loop, with sleeps in between.
+        init() must be called before this method.
 
-                self._init()
-                stack.callback(self.model.save)
+        The first sleep comes before the first update (this function should be
+        called imediately after init)."""
 
-                self.status_server.set_status_callback(self.get_status)
-                self.status_server.set_history_callback(self.history.get_status)
-                stack.enter_context(self.status_server)
-
-                stack.enter_context(util.Interrupter(self._logger))
-
-                while True:
-                    time.sleep(self.update_time)
-                    self._update()
-
-        except:
-            self._logger.exception("Unhandled exception")
+        while True:
+            time.sleep(self.update_time)
+            self.update()
