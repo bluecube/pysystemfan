@@ -131,6 +131,14 @@ function matrix(value) {
 }
 
 function display_history(data) {
+    var section = document.getElementById("history_container");
+    if (document.getElementById("show_history").checked) {
+        section.style.display = "block";
+    } else {
+        section.style.display = "none";
+        return;
+    }
+
     var variables = {};
 
     for (var i in data.labels) {
@@ -196,10 +204,10 @@ function axes(ctx, tmin, tmax, ymin, ymax) {
 function show_history_changed(checkbox) {
     var section = document.getElementById("history_container");
     if (checkbox.checked) {
-        section.style.display = "block";
         json_request("history.json", display_history);
     } else {
         section.style.display = "none";
+        document.getElementById("history").innerHTML = "";
     }
 }
 
