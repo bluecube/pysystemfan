@@ -3,8 +3,10 @@
 <title>PySystemFan status</title>
 <script type="text/javascript">
 
-min_temperature = 15;
-max_temperature = 55;
+var min_temperature = 15;
+var max_temperature = 55;
+
+var colors = ["Blue", "Red", "Green", "Gray", "Olive", "Purple", "Yellow", "Aqua"];
 
 function update() {
     json_request("status.json", display);
@@ -140,12 +142,21 @@ function display_history(data) {
     }
 
     var variables = {};
+    var legend = {};
 
+    var color_index = 0;
     for (var i in data.labels) {
         if (data.labels[i].length == 1)
             continue;
 
         variables[data.labels[i][1]] = true;
+
+        if (!(data.labels[i][0] in legend)) {
+            legend[data.labels[i][0]] = colors[color_index];
+            ++color_index;
+            if (color_index >= colors.length)
+                color_index = 0;
+        }
     }
 
     var html = "";
@@ -154,7 +165,9 @@ function display_history(data) {
                  variable + "\">Canvas not supported</canvas></td></tr>";
     }
     html += "<tr><th>legend</th><td>";
-    html += "&nbsp;";
+    for (var name in legend) {
+        html += "<span style=\"color: " + legend[name] + "\">" + name + "</span> ";
+    }
     html += "</td></tr>";
 
     first_time = data.values[0][0];
@@ -164,53 +177,35 @@ function display_history(data) {
 
     for (var variable in variables) {
         var ctx = document.getElementById("history_canvas_" + variable).getContext("2d");
-        if (variable = "temperature")
-            canvas_axes(ctx, first_time, last_time, min_temperature, max_temperature, 20);
+        var axes;
+        if (variable == "temperature")
+            axes = plot_axes(ctx, first_time, last_time, min_temperature, max_temperature, 20);
+        else if (variable == "rpm")
+            axes = plot_axes(ctx, first_time, last_time, 0, 3000, 20);
         else
-            canvas_axes(ctx, first_time, last_time, 0, 1, 20);
+            axes = plot_axes(ctx, first_time, last_time, 0, 1, 20);
 
-        for (var value_index in data.labels) {
-            if (data.labels[value_index].length == 1)
+        for (var j in data.labels) {
+            if (data.labels[j].length == 1)
                 continue;
 
-            if (data.labels[value_index][1] != variable)
+            if (data.labels[j][1] != variable)
                 continue;
 
-            var started = false;
-
-            ctx.beginPath();
-            for (var i in data.values) {
-                var t = data.values[i][0];
-                var v = data.values[i][value_index];
-
-                if (v == undefined)
-                    continue;
-
-                if (started)
-                    ctx.lineTo(t, v);
-                else {
-                    ctx.moveTo(t, v);
-                    started = true;
-                }
-            }
-            ctx.stroke();
+            axes.start_curve(legend[data.labels[j][0]]);
+            for (var i in data.values)
+                axes.add_point(data.values[i][0], data.values[i][j]);
+            axes.finish_curve();
         }
 
     }
-
-    /*
-    legend_rows = display_legend(data.history_legend);
-    document.getElementById("model").innerHTML = model_rows;
-    document.getElementById("history_legend").set_
-
-    */
 }
 
 function log10round(val) {
     return Math.exp(Math.LN10 * Math.round(Math.log(val) / Math.LN10));
 }
 
-function canvas_axes(ctx, tmin, tmax, ymin, ymax, pxgridsize) {
+function plot_axes(ctx, tmin, tmax, ymin, ymax, pxgridsize) {
     var w = ctx.canvas.clientWidth;
     var h = ctx.canvas.clientHeight;
 
@@ -225,18 +220,47 @@ function canvas_axes(ctx, tmin, tmax, ymin, ymax, pxgridsize) {
     y_low_grid = Math.floor(ymin / ygrid);
     y_high_grid = Math.ceil(ymax / ygrid);
 
-    ay = -h / ((y_high_grid - y_low_grid) * ygrid);
-    by = -ymax * ay;
+    ret = {};
 
-    at = w / (tmax - tmin);
-    bt = -tmin * at;
+    ret.ctx = ctx;
+    ret.ay = -h / ((y_high_grid - y_low_grid) * ygrid);
+    ret.by = -ymax * ret.ay;
 
-    ctx.setTransform(at, 0, 0, ay, bt, by);
-    ctx.lineWidth = 1/ay;
+    ret.at = w / (tmax - tmin);
+    ret.bt = -tmin * ret.at;
+
+    ctx.lineWidth = 2;
 
     for (var i = y_low_grid; i <= y_high_grid; ++i) {
-        ctx.fillRect(tmin, i * ygrid, tmax - tmin, 1/ay);
+        ctx.fillRect(0, ret.ay * i * ygrid + ret.by, ret.at * (tmax - tmin), 1);
     }
+
+    ret.start_curve = function(color) {
+        ret.first = true;
+        ret.ctx.beginPath();
+        ret.ctx.strokeStyle = color;
+    }
+
+    ret.add_point = function(t, v) {
+        if (v == undefined)
+            return;
+
+        x = ret.at * t + ret.bt;
+        y = ret.ay * v + ret.by;
+
+        if (ret.first) {
+            ret.ctx.moveTo(x, y);
+            ret.first = false;
+        }
+        else
+            ret.ctx.lineTo(x, y);
+    }
+
+    ret.finish_curve = function() {
+        ret.ctx.stroke();
+    }
+
+    return ret;
 }
 
 function show_history_changed(checkbox) {
