@@ -165,9 +165,37 @@ function display_history(data) {
     for (var variable in variables) {
         var ctx = document.getElementById("history_canvas_" + variable).getContext("2d");
         if (variable = "temperature")
-            plot_axes(ctx, first_time, last_time, min_temperature, max_temperature);
+            canvas_axes(ctx, first_time, last_time, min_temperature, max_temperature, 20);
         else
-            plot_axes(ctx, first_time, last_time, 0, 1);
+            canvas_axes(ctx, first_time, last_time, 0, 1, 20);
+
+        for (var value_index in data.labels) {
+            if (data.labels[value_index].length == 1)
+                continue;
+
+            if (data.labels[value_index][1] != variable)
+                continue;
+
+            var started = false;
+
+            ctx.beginPath();
+            for (var i in data.values) {
+                var t = data.values[i][0];
+                var v = data.values[i][value_index];
+
+                if (v == undefined)
+                    continue;
+
+                if (started)
+                    ctx.lineTo(t, v);
+                else {
+                    ctx.moveTo(t, v);
+                    started = true;
+                }
+            }
+            ctx.stroke();
+        }
+
     }
 
     /*
@@ -182,23 +210,33 @@ function log10round(val) {
     return Math.exp(Math.LN10 * Math.round(Math.log(val) / Math.LN10));
 }
 
-function axes(ctx, tmin, tmax, ymin, ymax) {
-    pxgridsize = 50; // How many pixels between grid lines
-
-    var w = 100; // TODO
-    var h = 50; // TODO
+function canvas_axes(ctx, tmin, tmax, ymin, ymax, pxgridsize) {
+    var w = ctx.canvas.clientWidth;
+    var h = ctx.canvas.clientHeight;
 
     tminDate = new Date(tmin * 1000);
     tmaxDate = new Date(tmax * 1000);
 
     dy = ymax - ymin;
-    ay = -h / dy;
-    by = -ymax * ay;
-
     // ygrid * h / pxgridsize ~~ dy
     // We want a grid line approximately every pxgridsize pixels
 
-    ygrid = log10round(dy * pxgridsize / h);
+    ygrid = log10round((ymax - ymin) * pxgridsize / h);
+    y_low_grid = Math.floor(ymin / ygrid);
+    y_high_grid = Math.ceil(ymax / ygrid);
+
+    ay = -h / ((y_high_grid - y_low_grid) * ygrid);
+    by = -ymax * ay;
+
+    at = w / (tmax - tmin);
+    bt = -tmin * at;
+
+    ctx.setTransform(at, 0, 0, ay, bt, by);
+    ctx.lineWidth = 1/ay;
+
+    for (var i = y_low_grid; i <= y_high_grid; ++i) {
+        ctx.fillRect(tmin, i * ygrid, tmax - tmin, 1/ay);
+    }
 }
 
 function show_history_changed(checkbox) {
