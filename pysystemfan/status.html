@@ -6,7 +6,7 @@
 var min_temperature = 15;
 var max_temperature = 55;
 
-var colors = ["Blue", "Red", "Green", "Gray", "Olive", "Purple", "Yellow", "Aqua"];
+var colors = ["Blue", "Red", "Lime", "Gray", "Olive", "Purple", "Yellow", "Aqua"];
 
 function update() {
     json_request("status.json", display);
@@ -142,33 +142,33 @@ function display_history(data) {
     }
 
     var variables = {};
-    var legend = {};
 
     var color_index = 0;
     for (var i in data.labels) {
         if (data.labels[i].length == 1)
             continue;
 
-        variables[data.labels[i][1]] = true;
+        var device = data.labels[i][0];
+        var variable = data.labels[i][1];
 
-        if (!(data.labels[i][0] in legend)) {
-            legend[data.labels[i][0]] = colors[color_index];
-            ++color_index;
-            if (color_index >= colors.length)
-                color_index = 0;
-        }
+        if (!(variable in variables))
+            variables[variable] = [];
+
+        var color = colors[variables[variable].length % colors.length];
+
+        variables[variable].push([device, color, i]);
     }
 
     var html = "";
     for (var variable in variables) {
         html += "<tr><th>" + variable + "</th><td><canvas id=\"history_canvas_" +
-                 variable + "\">Canvas not supported</canvas></td></tr>";
+                 variable + "\" width=\"800\" height=\"400\">Canvas not supported</canvas>";
+        for (var i in variables[variable]) {
+            var tuple = variables[variable][i];
+            html += "<span class=\"legend\" style=\"color: " + tuple[1] + "\">" + tuple[0] + "</span>";
+        }
+        html += "</td></tr>";
     }
-    html += "<tr><th>legend</th><td>";
-    for (var name in legend) {
-        html += "<span style=\"color: " + legend[name] + "\">" + name + "</span> ";
-    }
-    html += "</td></tr>";
 
     first_time = data.values[0][0];
     last_time = data.values[data.values.length - 1][0];
@@ -185,16 +185,15 @@ function display_history(data) {
         else
             axes = plot_axes(ctx, first_time, last_time, 0, 1, 20);
 
-        for (var j in data.labels) {
-            if (data.labels[j].length == 1)
-                continue;
+        for (var i in variables[variable]) {
+            var tuple = variables[variable][i];
+            var device = tuple[0];
+            var color = tuple[1];
+            var j = tuple[2];
 
-            if (data.labels[j][1] != variable)
-                continue;
-
-            axes.start_curve(legend[data.labels[j][0]]);
-            for (var i in data.values)
-                axes.add_point(data.values[i][0], data.values[i][j]);
+            axes.start_curve(color);
+            for (var k in data.values)
+                axes.add_point(data.values[k][0], data.values[k][j]);
             axes.finish_curve();
         }
 
@@ -231,9 +230,9 @@ function plot_axes(ctx, tmin, tmax, ymin, ymax, pxgridsize) {
 
     ctx.lineWidth = 2;
 
-    for (var i = y_low_grid; i <= y_high_grid; ++i) {
-        ctx.fillRect(0, ret.ay * i * ygrid + ret.by, ret.at * (tmax - tmin), 1);
-    }
+    //for (var i = y_low_grid; i <= y_high_grid; ++i) {
+    //    ctx.fillRect(0, ret.ay * i * ygrid + ret.by, ret.at * (tmax - tmin), 1);
+    //}
 
     ret.start_curve = function(color) {
         ret.first = true;
@@ -315,6 +314,13 @@ th {
 table.matrix td {
     border: none;
     padding: 0.1px;
+}
+canvas {
+    display: block;
+}
+.legend {
+    margin-left: 1em;
+    margin-right: 1em;
 }
 </style>
 
