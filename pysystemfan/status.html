@@ -141,7 +141,21 @@ function display_history(data) {
         return;
     }
 
+    var minimums = data.values[0].slice();
+    var maximums = data.values[0].slice();
+    for (var i in data.values) {
+        for (var j in data.values[i]) {
+            var v = data.values[i][j];
+            if (v > maximums[j])
+                maximums[j] = v;
+            else if (v < minimums[j])
+                minimums[j] = v;
+        }
+    }
+
+
     var variables = {};
+    var ranges = {}
 
     var color_index = 0;
     for (var i in data.labels) {
@@ -151,12 +165,26 @@ function display_history(data) {
         var device = data.labels[i][0];
         var variable = data.labels[i][1];
 
-        if (!(variable in variables))
+        if (!(variable in variables)) {
             variables[variable] = [];
+            ranges[variable] = [minimums[i], maximums[i]];
+            if (variable == "temperature")
+            {
+                if (ranges[variable][0] > min_temperature)
+                    ranges[variable][0] = min_temperature;
+                if (ranges[variable][1] < max_temperature)
+                    ranges[variable][1] = max_temperature;
+            }
+        }
 
         var color = colors[variables[variable].length % colors.length];
 
         variables[variable].push([device, color, i]);
+
+        if (ranges[variable][0] > minimums[i])
+            ranges[variable][0] = minimums[i];
+        if (ranges[variable][1] < maximums[i])
+            ranges[variable][1] = maximums[i];
     }
 
     var html = "";
@@ -177,13 +205,7 @@ function display_history(data) {
 
     for (var variable in variables) {
         var ctx = document.getElementById("history_canvas_" + variable).getContext("2d");
-        var axes;
-        if (variable == "temperature")
-            axes = plot_axes(ctx, first_time, last_time, min_temperature, max_temperature, 20);
-        else if (variable == "rpm")
-            axes = plot_axes(ctx, first_time, last_time, 0, 3000, 20);
-        else
-            axes = plot_axes(ctx, first_time, last_time, 0, 1, 20);
+        var axes = plot_axes(ctx, first_time, last_time, ranges[variable][0], ranges[variable][1], 20);
 
         for (var i in variables[variable]) {
             var tuple = variables[variable][i];
@@ -205,6 +227,11 @@ function log10round(val) {
 }
 
 function plot_axes(ctx, tmin, tmax, ymin, ymax, pxgridsize) {
+    if (ymin == ymax)
+    {
+        ymin -= 0.5;
+        ymax += 0.5;
+    }
     var w = ctx.canvas.clientWidth;
     var h = ctx.canvas.clientHeight;
 
