@@ -190,7 +190,7 @@ function display_history(data) {
     var html = "";
     for (var variable in variables) {
         html += "<tr><th>" + variable + "</th><td><canvas id=\"history_canvas_" +
-                 variable + "\" width=\"800\" height=\"400\">Canvas not supported</canvas>";
+                 variable + "\" width=\"1000\" height=\"300\">Canvas not supported</canvas>";
         for (var i in variables[variable]) {
             var tuple = variables[variable][i];
             html += "<span class=\"legend\" style=\"color: " + tuple[1] + "\">" + tuple[0] + "</span>";
