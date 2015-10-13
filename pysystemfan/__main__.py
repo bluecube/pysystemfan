@@ -1,12 +1,17 @@
 import contextlib
 import logging
-import time
+import argparse
 
 from . import controler
 from . import util
 
 def main():
-    c = controler.Controler()
+    parser = argparse.ArgumentParser(description = "PySystemFan -- the overkill fan manager.")
+    parser.add_argument("--outside-temperature", type=float,
+                        help="Measured temperature outside the system.")
+    args = parser.parse_args()
+
+    c = controler.Controler(**{k: v for k, v in vars(args).items() if v is not None})
 
     try:
         with contextlib.ExitStack() as stack:
