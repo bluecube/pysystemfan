@@ -79,9 +79,20 @@ function display_items(items) {
 function display_model(data) {
     var ret = ""
     for (var key in data) {
-        ret += "<tr><th>" + key + "</th><td>";
+        if (key == "parameter_variances")
+            continue;
+
+        ret += "<tr><th>";
+        ret += key;
+        if (key == "parameter_estimate" && "parameter_variances" in data)
+            ret += " + variances";
+        ret += "</th><td>";
         if (key == "parameter_estimate")
+        {
             ret += matrix(data[key]);
+            if ("parameter_variances" in data)
+                ret += matrix(data["parameter_variances"], Math.sqrt);
+        }
         else
             ret += display_value(key, data[key]);
         ret += "</td></tr>";
@@ -117,7 +128,11 @@ function bar_graph(value, min, max, text) {
            '%">&nbsp;</div></div>' + text;
 }
 
-function matrix(value) {
+function matrix(value, mapping_func) {
+    if (mapping_func == undefined)
+    {
+        mapping_func = function (x) { return x; };
+    }
     var ret = "<table class=\"matrix\">";
     for (var i = 0; i < value.length; ++i) {
         ret += "<tr>";
@@ -125,7 +140,7 @@ function matrix(value) {
         if (!(row instanceof Array))
             row = [row];
         for (var j = 0; j < row.length; ++j)
-            ret += "<td>" + row[j].toExponential(2) + "</td>";
+            ret += "<td>" + mapping_func(row[j]).toExponential(2) + "</td>";
         ret += "</tr>";
     }
     ret += "</table>";
@@ -341,6 +356,9 @@ th {
 table.matrix td {
     border: none;
     padding: 0.1px;
+}
+table.matrix {
+    display: inline-block;
 }
 canvas {
     display: block;

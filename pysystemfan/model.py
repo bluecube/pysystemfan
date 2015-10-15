@@ -234,7 +234,8 @@ class Model(config_params.Configurable):
         "Return status for the status server that can be directly jsonified"
         return collections.OrderedDict([
             ("outside_temperature", self.param_estimate[self.i.f, 0]),
-            ("parameter_estimate", self.param_estimate.tolist()),
+            ("parameter_estimate", self.param_estimate.getA1().tolist()),
+            ("parameter_variances", self.param_covariance.diagonal().getA1().tolist()),
             ("parameter_covariance_logdet", numpy.linalg.slogdet(self.param_covariance)[1])
             ])
 
