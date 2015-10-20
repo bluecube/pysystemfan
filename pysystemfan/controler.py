@@ -11,6 +11,8 @@ import time
 import collections
 import logging
 
+logger = logging.getLogger(__name__)
+
 class Controler(config_params.Configurable):
     _params = [
         ("log_file", "", "Where to log. If empty (default), logs to stdout."),
@@ -37,7 +39,6 @@ class Controler(config_params.Configurable):
         if len(self.log_file):
             logging_config["filename"] = self.log_file
         logging.basicConfig(**logging_config)
-        self._logger = logging.getLogger(__name__)
 
         self._prev_time = None
         self._prev_pwm = None
@@ -68,13 +69,13 @@ class Controler(config_params.Configurable):
         self._prev_pwm = pwms
 
     def _full_steam(self):
-        self._logger.info("Setting all fans to 100% power.")
+        logger.info("Setting all fans to 100% power.")
         self._set_pwm([255 for fan in self.fans])
 
     def _set_pwm_with_failsafe(self, pwm):
         for thermometer in self.thermometers:
             if thermometer.get_cached_temperature() > thermometer.max_temperature:
-                self._logger.error("Temperature failsafe triggered.")
+                logger.error("Temperature failsafe triggered.")
                 self._full_steam()
                 return
 

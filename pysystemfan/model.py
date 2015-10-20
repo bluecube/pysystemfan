@@ -8,6 +8,8 @@ import math
 import time
 import collections
 
+logger = logging.getLogger(__name__)
+
 class Model(config_params.Configurable):
     """ Model that controls cooling.
 
@@ -51,8 +53,6 @@ class Model(config_params.Configurable):
     def __init__(self, parent, params):
         self.process_params(params)
 
-        self._logger = logging.getLogger(__name__)
-
         self.update_time = parent.update_time
         self.autosave_timeout = util.TimeoutHelper(self.save_interval, self.update_time)
 
@@ -78,23 +78,23 @@ class Model(config_params.Configurable):
         return temperatures, activities
 
     def load(self):
-        self._logger.info("Loading model parameters from %s", self.storage_path)
+        logger.info("Loading model parameters from %s", self.storage_path)
 
         try:
             with open(self.storage_path, "r") as fp:
                 loaded = json.load(fp)
         except FileNotFoundError:
-            self._logger.info("Model storage file %s not found", self.storage_path)
+            logger.info("Model storage file %s not found", self.storage_path)
             return False
         except ValueError:
-            self._logger.info("Invalid content of model storage file. Ignoring.")
+            logger.info("Invalid content of model storage file. Ignoring.")
             return False
 
         if self.i.fans != loaded["fans"] or self.i.thermometers != loaded["thermometers"]:
-            self._logger.info("Loaded model has unexpected dimensions (%d thermometers, %d fans loaded, "
-                              "%d thermometers, %d fans expected). Ignoring.",
-                              loaded["thermometers"], loaded["fans"],
-                              self.i.thermometers, self.i.fans)
+            logger.info("Loaded model has unexpected dimensions (%d thermometers, %d fans loaded, "
+                        "%d thermometers, %d fans expected). Ignoring.",
+                        loaded["thermometers"], loaded["fans"],
+                        self.i.thermometers, self.i.fans)
             return False
 
         self.param_estimate = numpy.matrix(loaded["param_estimate"])
@@ -103,7 +103,7 @@ class Model(config_params.Configurable):
         return True
 
     def save(self):
-        self._logger.info("Saving model parameters to %s", self.storage_path)
+        logger.info("Saving model parameters to %s", self.storage_path)
 
         data = {"thermometers": self.i.thermometers,
                 "fans": self.i.fans,
@@ -139,7 +139,7 @@ class Model(config_params.Configurable):
         return ret
 
     def _add_temperature_measurement(self, temp, variance):
-        self._logger.info("Adding external temperature observation %d°C, variance %d", temp, variance)
+        logger.info("Adding external temperature observation %d°C, variance %d", temp, variance)
 
         measurement_residual = temp - self.param_estimate[self.i.f, 0]
 

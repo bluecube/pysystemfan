@@ -7,6 +7,8 @@ import logging
 import os.path
 import shutil
 
+logger = logging.getLogger(__name__)
+
 class StatusServer(config_params.Configurable):
     _params = [
         ("enabled", "", "If empty (the default), the status server is disabled."),
@@ -22,7 +24,6 @@ class StatusServer(config_params.Configurable):
         self._thread = None
         self._status_callback = None
         self._history_callback = None
-        self._logger = logging.getLogger(__name__)
         self._request_level = logging.getLevelName(self.request_log_level)
 
     def set_status_callback(self, callback):
@@ -35,7 +36,7 @@ class StatusServer(config_params.Configurable):
         if self.enabled == "":
             return self
 
-        self._logger.info("Starting HTTP status server on %s:%d", self.bind, self.port)
+        logger.info("Starting HTTP status server on %s:%d", self.bind, self.port)
 
         self._http_server = http.server.HTTPServer((self.bind, self.port),
                                                    _handler_factory(self))
@@ -54,14 +55,13 @@ class StatusServer(config_params.Configurable):
         self._http_server.shutdown()
         self._thread.join()
 
-        self._logger.info("Status server stopped")
+        logger.info("Status server stopped")
 
         return False
 
 def _handler_factory(status_server):
     status_callback = status_server._status_callback
     history_callback = status_server._history_callback
-    logger = status_server._logger
     request_level = status_server._request_level
 
     class Handler(http.server.BaseHTTPRequestHandler):

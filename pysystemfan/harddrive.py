@@ -8,6 +8,8 @@ import os
 import collections
 import logging
 
+logger = logging.getLogger(__name__)
+
 def _iterate_command_output(self, command):
     process = subprocess.Popen(command,
                                stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, stdin=subprocess.DEVNULL,
@@ -45,8 +47,6 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         self._previous_stat = None
         self._spindown_timeout = util.TimeoutHelper(self.spindown_time, self.update_time)
 
-        self._logger = logging.getLogger(__name__)
-
         self._cached_temperature = None
         self._cached_spinning = None
         self._cached_iops = None
@@ -68,7 +68,7 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         raise RuntimeError("Didn't find temperature in output of {}".format(_list_to_shell(command)))
 
     def spindown(self):
-        self._logger.info("Spinning down hard drive %s", self.name)
+        logger.info("Spinning down hard drive %s", self.name)
         subprocess.check_call(["hdparm", "-y", self.path],
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 

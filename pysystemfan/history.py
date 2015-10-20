@@ -5,6 +5,8 @@ import logging
 import itertools
 import time
 
+logger = logging.getLogger(__name__)
+
 class History(config_params.Configurable):
     """ Stores past data in a in-memory buffer and optionaly also in a file. """
 
@@ -17,7 +19,6 @@ class History(config_params.Configurable):
     def __init__(self, parent, params):
         self.process_params(params)
 
-        self._logger = logging.getLogger(__name__)
 
         self.update_time = parent.update_time
 
