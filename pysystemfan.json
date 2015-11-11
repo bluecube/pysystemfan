@@ -7,7 +7,6 @@
 
     "status_server": {
         "enabled": true,
-        "bind": "",
         "request_log_level": "DEBUG"
     },
 
@@ -33,7 +32,8 @@
             "path": "/dev/sda",
             "measure_in_idle": true,
             "max_temperature": 39,
-            "spindown_time": 1800
+            "spindown_time": 1800,
+            "spinning_only_activity": true
         },
         {
             "class": "Harddrive",
@@ -41,7 +41,8 @@
             "path": "/dev/sdb",
             "measure_in_idle": true,
             "max_temperature": 39,
-            "spindown_time": 1800
+            "spindown_time": 1800,
+            "spinning_only_activity": true
         },
         {
             "class": "Harddrive",
@@ -49,7 +50,8 @@
             "path": "/dev/sdd",
             "measure_in_idle": true,
             "max_temperature": 39,
-            "spindown_time": 1800
+            "spindown_time": 1800,
+            "spinning_only_activity": true
         },
         {
             "class": "Harddrive",
