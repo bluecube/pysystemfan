@@ -1,6 +1,9 @@
 # PySystemFan
 The overkill fan manager (Why? Because I can).
 
+This branch is unfinished and contains the megalomaniac start of the project.
+Maybe I will return to it some day.
+
 This program controls fans in a linux system to minimize noise and maintain temperature limits (measured on ACPI and SMART thermometers).
 Because simple proportional control or even PID controller are not good enough for me, this project will use [model predictive control](https://en.wikipedia.org/wiki/Model_predictive_control) to determine the fan speeds and an [extended Kalman filter](https://en.wikipedia.org/wiki/Extended_Kalman_filter) to identify the model parameters.
 Also because querying harddrive temperature keeps my drives from spinning down, this program can handle spindowns if there is no IO (the idea comes from [hddfancontrol](https://github.com/desbma/hddfancontrol)).
