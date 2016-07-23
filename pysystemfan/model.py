@@ -210,19 +210,15 @@ class Model(config_params.Configurable):
         self.param_covariance += self.process_noise_covariance
 
         # 2) Update
-
         predicted_measurement = self.predict_measurement(avg_temperatures,
                                                          avg_activities,
                                                          prev_pwm,
                                                          avg_temp)
-
         measurement_residual = measurement - predicted_measurement
-
         observation_matrix = self.observation_matrix(avg_temperatures,
                                                      avg_activities,
                                                      prev_pwm,
                                                      avg_temp)
-
         residual_covariance = observation_matrix * self.param_covariance * observation_matrix.T + self.observation_noise_covariance
         kalman_gain = self.param_covariance * observation_matrix.T * residual_covariance.I
         self.param_covariance = (numpy.matlib.identity(self.i.param_count) - kalman_gain * observation_matrix) * self.param_covariance
@@ -243,11 +239,11 @@ class _IndexHelper:
     """Just a helper that gives indices to the param array based on name"""
 
     def __init__(self, thermometers, fans):
-        self.thermometers = thermometers
-        self.fans = fans
-        self.param_count = thermometers * (4 + fans) + 1
-        self.a = range(0, thermometers)
-        self.b = range(thermometers, 2 * thermometers)
+        self.thermometers = thermometers # Thermometer count
+        self.fans = fans # Fan count
+        self.param_count = thermometers * (4 + fans) + 1 # Total parameter count
+        self.a = range(0, thermometers) # Idle heating up of device 1
+        self.b = range(thermometers, 2 * thermometers) # Activity heating up of device i
         self.c = range(2 * thermometers, 3 * thermometers)
         self.d = range(3 * thermometers, 4 * thermometers)
         self.e = [range(4 * thermometers + i * fans,
