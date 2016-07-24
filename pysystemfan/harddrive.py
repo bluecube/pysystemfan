@@ -46,9 +46,8 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         if not len(self.stat_path):
             self.stat_path = "/sys/block/{}/stat".format(os.path.basename(self.path))
 
-        self.update_time = parent.update_time
         self._previous_stat = None
-        self._spindown_timeout = util.TimeoutHelper(self.spindown_time, self.update_time)
+        self._spindown_timeout = util.TimeoutHelper(self.spindown_time)
 
         self._cached_temperature = None
         self._cached_spinning = None
@@ -148,9 +147,11 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         if is_spinning and self.spindown_time > 0:
             if had_io:
                 self._spindown_timeout.reset()
-            elif self._spindown_timeout.tick():
+            elif self._spindown_timeout(dt):
                 self.spindown()
 
         self._cached_temperature = temperature
         self._cached_spinning = is_spinning
         self._cached_iops = ops / dt
+
+        logger.debug("Harddrive {} {}°C (target {}°C)".format(self.name, self._cached_temperature, self.target_temperature))

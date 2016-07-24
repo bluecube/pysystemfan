@@ -1,14 +1,7 @@
 from . import config_params
-from . import model
-from . import history
 from . import fan
-from . import thermometer
-from . import harddrive
-from . import status_server
 
 import json
-import time
-import collections
 import logging
 
 logger = logging.getLogger(__name__)
@@ -19,14 +12,8 @@ class Controler(config_params.Configurable):
         ("log_level", "WARNING", "Minimal logging level. "
                                  "One of DEBUG, INFO, WARNING, ERROR, CRITICAL"),
         ("update_time", 30, "Time between updates in seconds."),
-        ("status_server", config_params.InstanceOf([status_server.StatusServer]), ""),
-        ("model", config_params.InstanceOf([model.Model]), ""),
-        ("history", config_params.InstanceOf([history.History], {}), ""),
         ("fans", config_params.ListOf([fan.SystemFan,
                                        fan.MockFan]), ""),
-        ("thermometers", config_params.ListOf([thermometer.SystemThermometer,
-                                               harddrive.Harddrive,
-                                               thermometer.MockThermometer]), ""),
     ]
 
     def __init__(self, **extra_args):
@@ -41,7 +28,6 @@ class Controler(config_params.Configurable):
         logging.basicConfig(**logging_config)
 
         self._prev_time = None
-        self._prev_pwm = None
 
         self._extra_args = extra_args
 
@@ -51,66 +37,11 @@ class Controler(config_params.Configurable):
 
         self.process_params(config)
 
-    def get_status(self):
-        "Return status for the status server that can be directly jsonified"
-
-        return collections.OrderedDict([
-            ("last_update", self._prev_time),
-            ("update_interval", self.update_time),
-            ("thermometers", [x.get_status() for x in self.thermometers]),
-            ("fans", [x.get_status() for x in self.fans]),
-            ("model", self.model.get_status()),
-            ])
-
-    def _set_pwm(self, pwms):
-        for fan, pwm in zip(self.fans, pwms):
-            assert(pwm == 0 or pwm > fan.min_pwm)
-            fan.set_pwm(pwm)
-        self._prev_pwm = pwms
-
-    def _full_steam(self):
+    def full_steam(self):
         logger.info("Setting all fans to 100% power.")
-        self._set_pwm([255 for fan in self.fans])
+        for fan in self.fans:
+            fan.set_pwm(255)
 
-    def _set_pwm_with_failsafe(self, pwm):
-        for thermometer in self.thermometers:
-            if thermometer.get_cached_temperature() > thermometer.max_temperature:
-                logger.error("Temperature failsafe triggered.")
-                self._full_steam()
-                return
-
-        self._set_pwm(pwm)
-
-    def init(self):
-        self._prev_time = time.time()
-        for x in self.thermometers:
-            x.init()
-
-        pwm = self.model.init(self.thermometers, self.fans, **self._extra_args)
-        self._set_pwm_with_failsafe(pwm)
-
-        self.history.init(self.thermometers, self.fans)
-
-    def update(self):
-        t = time.time()
-        dt = t - self._prev_time
-        self._prev_time = t
-
-        for x in self.thermometers:
-            x.update(dt)
-
-        pwm = self.model.update(self.thermometers, self.fans, self._prev_pwm, dt)
-        self._set_pwm_with_failsafe(pwm)
-
-        self.history.update(self.thermometers, self.fans)
-
-    def run(self):
-        """ Run updates in loop, with sleeps in between.
-        init() must be called before this method.
-
-        The first sleep comes before the first update (this function should be
-        called imediately after init)."""
-
-        while True:
-            time.sleep(self.update_time)
-            self.update()
+    def update(self, dt):
+        for f in self.fans:
+            f.update(dt)

@@ -1,64 +1,60 @@
 {
-    "log_level": "INFO",
-
-    "model": {
-        "storage_path": "/tmp/pysystemfan_model.json"
-    },
-
-    "status_server": {
-        "enabled": true,
-        "request_log_level": "DEBUG"
-    },
-
+    "log_level": "DEBUG",
     "fans": [
         {
             "class": "SystemFan",
             "name": "Fan",
             "pwm_path": "/sys/class/hwmon/hwmon2/pwm1",
-            "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input"
-        }
-    ],
+            "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input",
 
-    "thermometers": [
-        {
-            "class": "SystemThermometer",
-            "name": "System temp",
-            "path": "/sys/class/hwmon/hwmon2/temp1_input",
-            "max_temperature": 52
-        },
-        {
-            "class": "Harddrive",
-            "name": "/dev/sda",
-            "path": "/dev/sda",
-            "measure_in_idle": true,
-            "max_temperature": 39,
-            "spindown_time": 1800,
-            "spinning_only_activity": true
-        },
-        {
-            "class": "Harddrive",
-            "name": "/dev/sdb",
-            "path": "/dev/sdb",
-            "measure_in_idle": true,
-            "max_temperature": 39,
-            "spindown_time": 1800,
-            "spinning_only_activity": true
-        },
-        {
-            "class": "Harddrive",
-            "name": "/dev/sdd",
-            "path": "/dev/sdd",
-            "measure_in_idle": true,
-            "max_temperature": 39,
-            "spindown_time": 1800,
-            "spinning_only_activity": true
-        },
-        {
-            "class": "Harddrive",
-            "name": "/dev/sdc",
-            "path": "/dev/sdc",
-            "measure_in_idle": true,
-            "max_temperature": 39
+            "pid": {
+                "kP": 30,
+                "kI": 5,
+                "kD": 30
+            },
+
+            "thermometers": [
+                {
+                    "class": "SystemThermometer",
+                    "name": "System temp",
+                    "path": "/sys/class/hwmon/hwmon2/temp1_input",
+                    "target_temperature": 52
+                },
+                {
+                    "class": "Harddrive",
+                    "name": "/dev/sda",
+                    "path": "/dev/sda",
+                    "measure_in_idle": true,
+                    "target_temperature": 39,
+                    "spindown_time": 1800,
+                    "spinning_only_activity": true
+                },
+                {
+                    "class": "Harddrive",
+                    "name": "/dev/sdb",
+                    "path": "/dev/sdb",
+                    "measure_in_idle": true,
+                    "target_temperature": 39,
+                    "spindown_time": 1800,
+                    "spinning_only_activity": true
+                },
+                {
+                    "class": "Harddrive",
+                    "name": "/dev/sdd",
+                    "path": "/dev/sdd",
+                    "measure_in_idle": true,
+                    "target_temperature": 39,
+                    "spindown_time": 1800,
+                    "spinning_only_activity": true
+                },
+                {
+                    "class": "Harddrive",
+                    "name": "/dev/sdc",
+                    "path": "/dev/sdc",
+                    "measure_in_idle": true,
+                    "target_temperature": 39
+                }
+            ]
         }
     ]
 }

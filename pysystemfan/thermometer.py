@@ -2,12 +2,23 @@ from . import config_params
 
 import os
 import collections
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Thermometer(config_params.Configurable):
     _params = [
         ("name", "", "Name that will appear in status output."),
-        ("max_temperature", None, "Max temperature that we are allowed to reach."),
+        ("target_temperature", None, "We're trying to keep temperature below this value."),
+        ("temperature_scale", 1, "Temperature difference gets divided by this value before it is used for determining the fan speed."),
     ]
+
+    def __init__(self, parent, params):
+        self.process_params(params)
+        self.update(None)
+
+    def get_normalized_temperature_error(self):
+        return (self.get_cached_temperature() - self.target_temperature) / self.temperature_scale
 
     def get_cached_temperature(self):
         """ Return temperature (in °C) measured by the thermometer during last update."""
@@ -23,11 +34,6 @@ class Thermometer(config_params.Configurable):
         """ Returns a dict with current cached status. """
         raise NotImplementedError()
 
-    def init(self):
-        """ Do the first update. Must set the cached values the same way
-        that update does. """
-        self.update(None)
-
     def update(self, dt):
         """ Do any periodic tasks necessary, update cached temperature and activity.
         dt is time since the last update. """
@@ -39,7 +45,7 @@ class SystemThermometer(Thermometer, config_params.Configurable):
     ]
 
     def __init__(self, parent, params):
-        self.process_params(params)
+        super().__init__(parent, params)
         self._cached_temperature = None
         self._cached_activity = None
 
@@ -62,14 +68,13 @@ class SystemThermometer(Thermometer, config_params.Configurable):
         self._cached_temperature = self.get_temperature()
         self._cached_activity = os.getloadavg()[0]
 
+        logger.debug("Thermometer {} {}°C (target {}°C)".format(self.name, self._cached_temperature, self.target_temperature))
+
 class MockThermometer(Thermometer, config_params.Configurable):
     _params = [
         ("value", 30, "Temperature shown."),
         ("activity", 0.5, "Activity shown."),
     ]
-
-    def __init__(self, parent, params):
-        self.process_params(params)
 
     def get_temperature(self):
         return self.value
