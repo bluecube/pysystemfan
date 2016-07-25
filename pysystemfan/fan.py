@@ -13,8 +13,8 @@ class Fan(config_params.Configurable):
         ("name", None, "Name that will appear in status output."),
         ("min_pwm", 80, "Minimal allowed nonzero PWM value. Below this the fan will stop in normal mode, or stay on minimum in settle mode."),
         ("spinup_pwm", 128, "Minimal pwm settings to overcome static friction in the fan. Will be kept for first update period after start."),
-        ("min_settle_time", 120, "Number of seconds at minimum pwm before stopping the fan."),
-        #TODO: Limit max settle time
+        ("min_settle_time", 120, "Minimal number of seconds at minimum pwm before stopping the fan."),
+        ("max_settle_time", 3600, "Maximal number of seconds at minimum pwm before stopping the fan."),
         ("pid", config_params.InstanceOf([util.Pid], Exception), "PID controller for this fan."),
         ("thermometers", config_params.ListOf([thermometer.SystemThermometer,
                                                harddrive.Harddrive,
@@ -72,7 +72,8 @@ class Fan(config_params.Configurable):
                 if self._settle_timer(dt):
                     #TODO: Don't switch to stopped if error > 0
                     self._set_pwm_checked(0)
-                    self._settle_timer.limit *= 2
+                    self._settle_timer.limit = min(self._settle_timer.limit * 2,
+                                                   self.max_settle_time)
                     self._change_state("stopped")
             else:
                 self._set_pwm_checked(pwm)
