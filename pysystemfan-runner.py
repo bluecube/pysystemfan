@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import pysystemfan.__main__ as pysystemfan_main
+from pysystemfan import controler
 
 if __name__ == "__main__":
-    pysystemfan_main.main()
+    controler.Controler().run()
 else:
     raise Exception("Don't import this file, it's just a runner.")

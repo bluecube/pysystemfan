@@ -1,6 +1,10 @@
 from . import config_params
 from . import fan
+from . import util
 
+import contextlib
+import argparse
+import time
 import json
 import logging
 
@@ -45,3 +49,16 @@ class Controler(config_params.Configurable):
     def update(self, dt):
         for f in self.fans:
             f.update(dt)
+
+    def run(self):
+        try:
+            with contextlib.ExitStack() as stack:
+                stack.callback(self.full_steam)
+                stack.enter_context(util.Interrupter())
+
+                prev_time = time.time()
+                while True:
+                    time.sleep(self.update_time)
+                    self.update(self.update_time)
+        except:
+            logging.getLogger(__name__).exception("Unhandled exception")
