@@ -1,5 +1,7 @@
 from . import config_params
+
 import itertools
+import collections
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,7 +26,8 @@ class Pid(config_params.Configurable):
     _params = [
         ("kP", 0, "Proportional constant"),
         ("kI", 0, "Integral constant"),
-        ("kD", 0, "Derivative constant")
+        ("kD", 0, "Derivative constant"),
+        ("derivative_smoothing", 5, "How many more ticks to use when calcualting derivatives")
     ]
 
     def __init__(self, parent, params):
@@ -34,17 +37,20 @@ class Pid(config_params.Configurable):
     def reset(self):
         self._integrator = 0
         self._last_error = None
+        self._derivatives = collections.deque(maxlen=self.derivative_smoothing + 1)
 
-    def update(self, error):
+    def update(self, error, dt):
         if self._last_error is not None:
-            derivative = error - self._last_error
+            derivative = (error - self._last_error) / dt
         else:
             derivative = 0
-
+        smooth_derivative = (sum(self._derivatives) + derivative) / (len(self._derivatives) + 1)
+        self._derivatives.append(derivative)
         self._last_error = error
-        self._integrator += error
 
-        return self.kP * error + self.kI * self._integrator + self.kD * derivative
+        self._integrator += error * dt
+
+        return self.kP * error + self.kI * self._integrator + self.kD * smooth_derivative
 
 class Interrupter:
     def __enter__(self):

@@ -56,7 +56,7 @@ class Fan(config_params.Configurable):
                                            for t in self.thermometers)
 
         if self._state == "running":
-            pwm = self.pid.update(normalized_temperature_error)
+            pwm = self.pid.update(normalized_temperature_error, dt)
             self._set_pwm_checked(pwm)
             if pwm < self.min_pwm:
                 self._settle_timer.reset()
@@ -64,7 +64,7 @@ class Fan(config_params.Configurable):
                 logger.debug("Settle time for {} is {}s".format(self.name, self._settle_timer.limit))
 
         elif self._state == "settle":
-            pwm = self.pid.update(normalized_temperature_error)
+            pwm = self.pid.update(normalized_temperature_error, dt)
 
             if pwm < self.min_pwm:
                 # No need to set pwm, it is already at minimum
@@ -80,8 +80,8 @@ class Fan(config_params.Configurable):
         elif self._state == "stopped":
             if normalized_temperature_error > 0:
                 self.pid.reset()
-                pwm = self.pid.update(normalized_temperature_error)
-                self._set_pwm_checked(pwm)
+                pwm = self.pid.update(normalized_temperature_error, dt)
+                self._set_pwm_checked(max(pwm, self.spinup_pwm))
                 self._change_state("running")
             else:
                 self._settle_timer.limit = max(self._settle_timer.limit - dt,
