@@ -28,6 +28,7 @@ class Pid(config_params.Configurable):
         ("kI", 0, "Integral constant"),
         ("kD", 0, "Derivative constant"),
         ("derivative_smoothing", 5, "How many more ticks to use when calcualting derivatives")
+        #TODO: Smoothing should be time based too (rather than tick based)
     ]
 
     def __init__(self, parent, params):

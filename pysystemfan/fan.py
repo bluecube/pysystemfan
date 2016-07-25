@@ -14,6 +14,7 @@ class Fan(config_params.Configurable):
         ("min_pwm", 80, "Minimal allowed nonzero PWM value. Below this the fan will stop in normal mode, or stay on minimum in settle mode."),
         ("spinup_pwm", 128, "Minimal pwm settings to overcome static friction in the fan. Will be kept for first update period after start."),
         ("min_settle_time", 120, "Number of seconds at minimum pwm before stopping the fan."),
+        #TODO: Limit max settle time
         ("pid", config_params.InstanceOf([util.Pid], Exception), "PID controller for this fan."),
         ("thermometers", config_params.ListOf([thermometer.SystemThermometer,
                                                harddrive.Harddrive,
@@ -55,6 +56,8 @@ class Fan(config_params.Configurable):
 
         normalized_temperature_error = max(t.get_normalized_temperature_error()
                                            for t in self.thermometers)
+
+        #TODO: Settle should be controlled by error and not pwm value
 
         if self._state == "running":
             pwm = self.pid.update(normalized_temperature_error, dt)
