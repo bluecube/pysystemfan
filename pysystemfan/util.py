@@ -63,3 +63,6 @@ class Interrupter:
             return True
         else:
             return False
+
+def clip(x, a, b):
+    return max(a, min(x, b))

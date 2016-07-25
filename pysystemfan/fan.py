@@ -36,12 +36,9 @@ class Fan(config_params.Configurable):
 
     def _set_pwm_checked(self, pwm):
         #TODO: Avoid setting pwm if it has not changed
-        if pwm < self.min_pwm and pwm != 0:
-            pwm = int(self.min_pwm)
-        elif pwm > 255:
-            pwm = 255
-        else:
-            pwm = int(pwm)
+        pwm = int(pwm)
+        if pwm != 0:
+            pwm = util.clip(pwm, self.min_pwm, 255)
 
         logger.debug("Setting {} to {}".format(self.name, pwm))
         self.set_pwm(pwm)
