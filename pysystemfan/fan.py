@@ -12,8 +12,9 @@ class Fan(config_params.Configurable):
     _params = [
         ("name", None, "Name that will appear in status output."),
         ("min_pwm", 80, "Minimal allowed nonzero PWM value. Below this the fan will stop in normal mode, or stay on minimum in settle mode."),
-        ("min_settle_time", 30, "Number of seconds at minimum pwm before stopping the fan"),
-        ("pid", config_params.InstanceOf([util.Pid], Exception), "PID controller for this fan"),
+        ("spinup_pwm", 128, "Minimal pwm settings to overcome static friction in the fan. Will be kept for first update period after start."),
+        ("min_settle_time", 120, "Number of seconds at minimum pwm before stopping the fan."),
+        ("pid", config_params.InstanceOf([util.Pid], Exception), "PID controller for this fan."),
         ("thermometers", config_params.ListOf([thermometer.SystemThermometer,
                                                harddrive.Harddrive,
                                                thermometer.MockThermometer]), ""),
@@ -89,6 +90,8 @@ class Fan(config_params.Configurable):
 
         else:
             raise Exception("Unknown state " + self._state)
+
+        logger.debug("Speed of {} is {} rpm".format(self.name, self.get_rpm()))
 
 class SystemFan(Fan, config_params.Configurable):
     _params = [
