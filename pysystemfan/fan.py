@@ -54,30 +54,25 @@ class Fan(config_params.Configurable):
         normalized_temperature_error = max(t.get_normalized_temperature_error()
                                            for t in self.thermometers)
 
-        #TODO: Settle should be controlled by error and not pwm value
-
         if self._state == "running":
             pwm = self.pid.update(normalized_temperature_error, dt)
             self._set_pwm_checked(pwm)
-            if pwm < self.min_pwm:
+            if normalized_temperature_error < 0:
                 self._settle_timer.reset()
                 self._change_state("settle")
                 logger.debug("Settle time for {} is {}s".format(self.name, self._settle_timer.limit))
 
         elif self._state == "settle":
             pwm = self.pid.update(normalized_temperature_error, dt)
+            self._set_pwm_checked(pwm)
 
-            if pwm < self.min_pwm:
-                # No need to set pwm, it is already at minimum
-                if self._settle_timer(dt):
-                    #TODO: Don't switch to stopped if error > 0
-                    self._set_pwm_checked(0)
-                    self._settle_timer.limit = min(self._settle_timer.limit * 2,
-                                                   self.max_settle_time)
-                    self._change_state("stopped")
-            else:
-                self._set_pwm_checked(pwm)
+            if normalized_temperature_error > 0:
                 self._change_state("running")
+            elif self._settle_timer(dt):
+                self._set_pwm_checked(0)
+                self._settle_timer.limit = min(self._settle_timer.limit * 2,
+                                               self.max_settle_time)
+                self._change_state("stopped")
 
         elif self._state == "stopped":
             if normalized_temperature_error > 0:
