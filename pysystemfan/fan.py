@@ -40,7 +40,7 @@ class Fan(config_params.Configurable):
         if pwm != 0:
             pwm = util.clip(pwm, self.min_pwm, 255)
 
-        logger.debug("Setting {} to {}".format(self.name, pwm))
+        logger.debug("Setting {} to {}%".format(self.name, (100 * pwm) // 255))
         self.set_pwm(pwm)
 
     def _change_state(self, state):
@@ -48,6 +48,8 @@ class Fan(config_params.Configurable):
         logger.info("Changing state of {} to {}".format(self.name, state))
 
     def update(self, dt):
+        logger.debug("Speed of {} is {} rpm".format(self.name, self.get_rpm()))
+
         for thermometer in self.thermometers:
             thermometer.update(dt)
 
@@ -64,15 +66,17 @@ class Fan(config_params.Configurable):
 
         elif self._state == "settle":
             pwm = self.pid.update(normalized_temperature_error, dt)
-            self._set_pwm_checked(pwm)
 
             if normalized_temperature_error > 0:
+                self._set_pwm_checked(pwm)
                 self._change_state("running")
             elif self._settle_timer(dt):
                 self._set_pwm_checked(0)
                 self._settle_timer.limit = min(self._settle_timer.limit * 2,
                                                self.max_settle_time)
                 self._change_state("stopped")
+            else:
+                self._set_pwm_checked(pwm)
 
         elif self._state == "stopped":
             if normalized_temperature_error > 0:
@@ -86,8 +90,6 @@ class Fan(config_params.Configurable):
 
         else:
             raise Exception("Unknown state " + self._state)
-
-        logger.debug("Speed of {} is {} rpm".format(self.name, self.get_rpm()))
 
 class SystemFan(Fan, config_params.Configurable):
     _params = [

@@ -56,9 +56,9 @@ class Controler(config_params.Configurable):
                 stack.callback(self.full_steam)
                 stack.enter_context(util.Interrupter())
 
-                prev_time = time.time()
+                logger.info("PySystemFan started")
                 while True:
                     time.sleep(self.update_time)
                     self.update(self.update_time)
         except:
-            logging.getLogger(__name__).exception("Unhandled exception")
+            logger.exception("Unhandled exception")

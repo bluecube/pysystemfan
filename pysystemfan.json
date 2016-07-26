@@ -49,7 +49,7 @@
                 },
                 {
                     "class": "Harddrive",
-                    "name": "/dev/sdc",
+                    "name": "/dev/sdc (SSD)",
                     "path": "/dev/sdc",
                     "measure_in_idle": true,
                     "target_temperature": 39
