@@ -51,6 +51,10 @@ class Pid(config_params.Configurable):
 
         self._integrator += error * dt
 
+        logger.debug("error = {}, derivative = {}, integrator = {}".format(error,
+                                                                           derivative,
+                                                                           self._integrator))
+
         return self.kP * error + self.kI * self._integrator + self.kD * smooth_derivative
 
 class Interrupter:
