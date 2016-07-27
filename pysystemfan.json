@@ -8,9 +8,9 @@
             "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input",
 
             "pid": {
-                "kP": 1,
-                "kI": 0.2,
-                "kD": 1
+                "kP": 80,
+                "kI": 0.4,
+                "kD": 1500
             },
 
             "thermometers": [
