@@ -39,26 +39,32 @@ class Pid(config_params.Configurable):
         self._last_errors = collections.deque()
         self._last_errors_dt = 0
 
-    def update(self, error, dt):
+    def update(self, error, dt, min_value, max_value):
         if len(self._last_errors):
             self._last_errors_dt += dt
             smooth_derivative = (error - self._last_errors[0][0]) / self._last_errors_dt
+            logger.debug("last_errors_dt = {}".format(self._last_errors_dt))
             if self._last_errors_dt > self.derivative_smoothing:
                 self._last_errors.popleft()
                 self._last_errors_dt -= self._last_errors[0][1]
         else:
-            self._last_errors_dt = 0
             smooth_derivative = 0
 
         self._last_errors.append((error, dt))
-
-        self._integrator += error * dt
 
         logger.debug("error = {}, derivative = {}, integrator = {}".format(error,
                                                                            smooth_derivative,
                                                                            self._integrator))
 
-        return self.kP * error + self.kI * self._integrator + self.kD * smooth_derivative
+        ret = self.kP * error + self.kI * self._integrator + self.kD * smooth_derivative
+
+        if ret < min_value:
+            return min_value
+        elif ret > max_value:
+            return max_value
+        else:
+            self._integrator += error * dt
+            return ret
 
 class Interrupter:
     def __enter__(self):
@@ -70,6 +76,3 @@ class Interrupter:
             return True
         else:
             return False
-
-def clip(x, a, b):
-    return max(a, min(x, b))
