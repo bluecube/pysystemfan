@@ -27,8 +27,7 @@ class Pid(config_params.Configurable):
         ("kP", 0, "Proportional constant"),
         ("kI", 0, "Integral constant"),
         ("kD", 0, "Derivative constant"),
-        ("derivative_smoothing", 5, "How many more ticks to use when calcualting derivatives")
-        #TODO: Smoothing should be time based too (rather than tick based)
+        ("derivative_smoothing", 300, "How many seconds of history to use when calcualting derivatives")
     ]
 
     def __init__(self, parent, params):
@@ -37,22 +36,26 @@ class Pid(config_params.Configurable):
 
     def reset(self):
         self._integrator = 0
-        self._last_error = None
-        self._derivatives = collections.deque(maxlen=self.derivative_smoothing + 1)
+        self._last_errors = collections.deque()
+        self._last_errors_dt = 0
 
     def update(self, error, dt):
-        if self._last_error is not None:
-            derivative = (error - self._last_error) / dt
+        if len(self._last_errors):
+            self._last_errors_dt += dt
+            smooth_derivative = (error - self._last_errors[0][0]) / self._last_errors_dt
+            if self._last_errors_dt > self.derivative_smoothing:
+                self._last_errors.popleft()
+                self._last_errors_dt -= self._last_errors[0][1]
         else:
-            derivative = 0
-        smooth_derivative = (sum(self._derivatives) + derivative) / (len(self._derivatives) + 1)
-        self._derivatives.append(derivative)
-        self._last_error = error
+            self._last_errors_dt = 0
+            smooth_derivative = 0
+
+        self._last_errors.append((error, dt))
 
         self._integrator += error * dt
 
         logger.debug("error = {}, derivative = {}, integrator = {}".format(error,
-                                                                           derivative,
+                                                                           smooth_derivative,
                                                                            self._integrator))
 
         return self.kP * error + self.kI * self._integrator + self.kD * smooth_derivative
