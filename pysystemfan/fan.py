@@ -74,9 +74,8 @@ class Fan(config_params.Configurable):
                 self._set_pwm_checked(pwm)
 
         elif self._state == "stopped":
+            self.pid.reset_accumulator()
             if normalized_temperature_error > 0:
-                self.pid.reset_accumulator()
-                pwm = self.pid.update(normalized_temperature_error, dt, self.min_pwm, 255)
                 self._set_pwm_checked(max(pwm, self.spinup_pwm))
                 self._change_state("running")
             else:
