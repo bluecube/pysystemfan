@@ -27,7 +27,7 @@ class Pid(config_params.Configurable):
         ("kP", 0, "Proportional constant"),
         ("kI", 0, "Integral constant"),
         ("kD", 0, "Derivative constant"),
-        ("derivative_smoothing", 300, "How many seconds of history to use when calcualting derivatives")
+        ("derivative_smoothing", 120, "How many seconds of history to use when calcualting derivatives")
     ]
 
     def __init__(self, parent, params):
@@ -45,11 +45,10 @@ class Pid(config_params.Configurable):
     def update(self, error, dt, min_value, max_value):
         if len(self._last_errors):
             self._last_errors_dt += dt
-            smooth_derivative = (error - self._last_errors[0][0]) / self._last_errors_dt
-            logger.debug("last_errors_dt = {}".format(self._last_errors_dt))
             if self._last_errors_dt > self.derivative_smoothing:
                 self._last_errors.popleft()
                 self._last_errors_dt -= self._last_errors[0][1]
+            smooth_derivative = (error - self._last_errors[0][0]) / self._last_errors_dt
         else:
             smooth_derivative = 0
 
