@@ -39,6 +39,9 @@ class Pid(config_params.Configurable):
         self._last_errors = collections.deque()
         self._last_errors_dt = 0
 
+    def reset_accumulator(self):
+        self._integrator = 0
+
     def update(self, error, dt, min_value, max_value):
         if len(self._last_errors):
             self._last_errors_dt += dt
@@ -58,12 +61,14 @@ class Pid(config_params.Configurable):
 
         ret = self.kP * error + self.kI * self._integrator + self.kD * smooth_derivative
 
+        if (error > 0 and ret < max_value) or (error < 0 and ret > min_value):
+            self._integrator += error * dt
+
         if ret < min_value:
             return min_value
         elif ret > max_value:
             return max_value
         else:
-            self._integrator += error * dt
             return ret
 
 class Interrupter:
