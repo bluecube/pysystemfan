@@ -7,6 +7,8 @@
             "pwm_path": "/sys/class/hwmon/hwmon2/pwm1",
             "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input",
 
+            "min_pwm": 60,
+
             "pid": {
                 "kP": 80,
                 "kI": 0.4,
@@ -18,14 +20,14 @@
                     "class": "SystemThermometer",
                     "name": "System temp",
                     "path": "/sys/class/hwmon/hwmon2/temp1_input",
-                    "target_temperature": 52
+                    "target_temperature": 50
                 },
                 {
                     "class": "Harddrive",
                     "name": "/dev/sda",
                     "path": "/dev/sda",
                     "measure_in_idle": true,
-                    "target_temperature": 39,
+                    "target_temperature": 38,
                     "spindown_time": 1800,
                     "spinning_only_activity": true
                 },
@@ -34,7 +36,7 @@
                     "name": "/dev/sdb",
                     "path": "/dev/sdb",
                     "measure_in_idle": true,
-                    "target_temperature": 39,
+                    "target_temperature": 38,
                     "spindown_time": 1800,
                     "spinning_only_activity": true
                 },
@@ -43,7 +45,7 @@
                     "name": "/dev/sdd",
                     "path": "/dev/sdd",
                     "measure_in_idle": true,
-                    "target_temperature": 39,
+                    "target_temperature": 38,
                     "spindown_time": 1800,
                     "spinning_only_activity": true
                 },
@@ -52,7 +54,7 @@
                     "name": "/dev/sdc (SSD)",
                     "path": "/dev/sdc",
                     "measure_in_idle": true,
-                    "target_temperature": 42
+                    "target_temperature": 40
                 }
             ]
         }
