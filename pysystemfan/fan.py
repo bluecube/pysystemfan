@@ -109,10 +109,6 @@ class SystemFan(Fan, config_params.Configurable):
         with open(self.pwm_path, "w") as fp:
             print(str(value), file=fp)
 
-    def get_status(self):
-        return collections.OrderedDict([
-            ("name", self.name),
-            ("rpm", self.get_rpm())])
 
 class MockFan(Fan, config_params.Configurable):
     _params = [
@@ -125,8 +121,3 @@ class MockFan(Fan, config_params.Configurable):
 
     def set_pwm(self, value):
         pass
-
-    def get_status(self):
-        return collections.OrderedDict([
-            ("name", self.name),
-            ("rpm", self.get_rpm())])

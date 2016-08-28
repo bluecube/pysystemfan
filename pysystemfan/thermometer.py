@@ -30,10 +30,6 @@ class Thermometer(config_params.Configurable):
         dissipated near this thermometer. """
         raise NotImplementedError()
 
-    def get_status(self):
-        """ Returns a dict with current cached status. """
-        raise NotImplementedError()
-
     def update(self, dt):
         """ Do any periodic tasks necessary, update cached temperature and activity.
         dt is time since the last update. """
@@ -52,11 +48,6 @@ class SystemThermometer(Thermometer, config_params.Configurable):
     def get_temperature(self):
         with open(self.path, "r") as fp:
             return int(fp.readline()) / 1000
-
-    def get_status(self):
-        return collections.OrderedDict([
-            ("name", self.name),
-            ("temperature", self._cached_temperature)])
 
     def get_cached_temperature(self):
         return self._cached_temperature
@@ -78,12 +69,6 @@ class MockThermometer(Thermometer, config_params.Configurable):
 
     def get_temperature(self):
         return self.value
-
-    def get_status(self):
-        return collections.OrderedDict([
-            ("name", self.name),
-            ("temperature", self.value),
-            ("activity", self.activity)])
 
     def get_cached_temperature(self):
         return self.value

@@ -105,13 +105,6 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
         return had_io, ops
 
-    def get_status(self):
-        return collections.OrderedDict([
-            ("name", self.name),
-            ("temperature", self._cached_temperature),
-            ("spinning", self._cached_spinning),
-            ("iops", self._cached_iops)])
-
     def get_cached_temperature(self):
         return self._cached_temperature
 
