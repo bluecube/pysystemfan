@@ -1,12 +1,18 @@
 # PySystemFan
-The overkill fan manager (Why? Because I can).
 
-This program controls fans in a linux system to minimize noise and maintain temperature limits (measured on ACPI and SMART thermometers).
-Because simple proportional control or even PID controller are not good enough for me, this project will use [model predictive control](https://en.wikipedia.org/wiki/Model_predictive_control) to determine the fan speeds and an [extended Kalman filter](https://en.wikipedia.org/wiki/Extended_Kalman_filter) to identify the model parameters.
-Also because querying harddrive temperature keeps my drives from spinning down, this program can handle spindowns if there is no IO (the idea comes from [hddfancontrol](https://github.com/desbma/hddfancontrol)).
+The not so overkill fan manager.
 
-Currently this is just work in progress, the EKF part sorta works, fans are stopped unless any of the temperatures exceeds the threshold, otherwise all of them run at full power.
-There are some failsafes in place, so that the program probably won't burn down your computer), but don't count on it :-).
+PySystemFan assigns several thermometers (accessed through hwmon interface in `/sys` or using `smarctl` for harddrives) to each fan and regulates its speed so that all of the temperatures are at or below a specified setpoint.
+If your system has too powerful fan for the heat it generates (minimum fan speed is too much cooling for the set temperature and no fan is not enough cooling), this software can also prevent fan from frequently stopping and starting by exponentially increasing (up to a limit) time it waits before the fan is stopped.
+As a side effect of `smartctl` based drive temperature measurements PySystemFan also has to spin down drives in case of inactivity instead of relying on the HDD firmware, because my WD reds counted temperature polling as access (this is optional).
 
-The code is being tested in a small NAS system built in [my custom case](https://github.com/bluecube/nas-case), which means that I deal with rather slow temperature changes.
-It is questionable if this approach won't degrade from "mostly pointless" to "completely pointless" on systems with more power and higher working temperatures.
+PySystemFan not 100% finished yet, but it works already.
+It's being tested (as in running 24/7 for the last few months) in a small NAS system built in [my custom case](https://github.com/bluecube/nas-case).
+Exponential fan-off backoff is still being tweaked, the other features seem to be working well.
+What's missing is mostly in the front end and packaging departments.
+
+PySystemFan is written in python 3 with no dependencies outside standard library.
+`smartctl` and `hdparm` commands are needed to measure temperatures of harddrives and to spin them down.
+The code is Linux specific now, but should be reasonably simple to extend to other unixes (as long as the OS has a way to measure temperature and control a fan).
+
+Feedback is appreciated :-).
