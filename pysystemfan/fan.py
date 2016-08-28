@@ -5,6 +5,7 @@ from . import util
 
 import collections
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -14,7 +15,8 @@ class Fan(config_params.Configurable):
         ("min_pwm", 80, "Minimal allowed nonzero PWM value. Below this the fan will stop in normal mode, or stay on minimum in settle mode."),
         ("spinup_pwm", 128, "Minimal pwm settings to overcome static friction in the fan. Will be kept for first update period after start."),
         ("min_settle_time", 120, "Minimal number of seconds at minimum pwm before stopping the fan."),
-        ("max_settle_time", 3600, "Maximal number of seconds at minimum pwm before stopping the fan."),
+        ("max_settle_time", 3 * 60 * 60, "Maximal number of seconds at minimum pwm before stopping the fan."),
+        ("settle_time_reset_interval", 30 * 60, "After how many seconds of stopped fan is the settle time reset to minimum"),
         ("pid", config_params.InstanceOf([util.Pid], Exception), "PID controller for this fan."),
         ("thermometers", config_params.ListOf([thermometer.SystemThermometer,
                                                harddrive.Harddrive,
@@ -29,6 +31,8 @@ class Fan(config_params.Configurable):
         self.set_pwm(255)
 
         self._last_pwm = None
+        self._stopped_since = None
+
     def get_rpm(self):
         """ Read rpm of the fan. Needs to be overridden. """
         raise NotImplementedError()
@@ -79,6 +83,7 @@ class Fan(config_params.Configurable):
                 self._settle_timer.limit = min(self._settle_timer.limit * 2,
                                                self.max_settle_time)
                 self._change_state("stopped")
+                self._stopped_since = time.time()
             else:
                 self._set_pwm_checked(pwm)
 
@@ -87,9 +92,9 @@ class Fan(config_params.Configurable):
             if normalized_temperature_error > 0:
                 self._set_pwm_checked(max(pwm, self.spinup_pwm))
                 self._change_state("running")
-            else:
-                self._settle_timer.limit = max(self._settle_timer.limit - dt,
-                                               self.min_settle_time)
+
+                if self._stopped_since + self.settle_time_reset_interval < time.time():
+                    self._settle_timer.limit = self.min_settle_time
 
         else:
             raise Exception("Unknown state " + self._state)
