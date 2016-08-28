@@ -56,13 +56,13 @@ class Fan(config_params.Configurable):
 
         if self._state == "running":
             self._set_pwm_checked(pwm)
-            if normalized_temperature_error < 0:
+            if normalized_temperature_error < 0 and pwm <= self.min_pwm:
                 self._settle_timer.reset()
                 self._change_state("settle")
                 logger.debug("Settle time for {} is {}s".format(self.name, self._settle_timer.limit))
 
         elif self._state == "settle":
-            if normalized_temperature_error > 0:
+            if normalized_temperature_error > 0 or pwm > self.min_pwm:
                 self._set_pwm_checked(pwm)
                 self._change_state("running")
             elif self._settle_timer(dt):
