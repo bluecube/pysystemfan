@@ -28,6 +28,7 @@ class Fan(config_params.Configurable):
         self._settle_timer = util.TimeoutHelper(self.min_settle_time)
         self.set_pwm(255)
 
+        self._last_pwm = None
     def get_rpm(self):
         raise NotImplementedError()
 
@@ -35,10 +36,13 @@ class Fan(config_params.Configurable):
         raise NotImplementedError()
 
     def _set_pwm_checked(self, pwm):
-        #TODO: Avoid setting pwm if it has not changed
         pwm = int(pwm)
+        if pwm == self._last_pwm:
+            return
+
         logger.debug("Setting {} to {}%".format(self.name, (100 * pwm) // 255))
         self.set_pwm(pwm)
+        self._last_pwm = pwm
 
     def _change_state(self, state):
         self._state = state
