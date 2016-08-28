@@ -30,12 +30,15 @@ class Fan(config_params.Configurable):
 
         self._last_pwm = None
     def get_rpm(self):
+        """ Read rpm of the fan. Needs to be overridden. """
         raise NotImplementedError()
 
     def set_pwm(self, pwm):
+        """ Set the PWM input the fan. Needs to be overridden. """
         raise NotImplementedError()
 
     def _set_pwm_checked(self, pwm):
+        """ Wrapped set_pwm, deduplicates and logs speed changes """
         pwm = int(pwm)
         if pwm == self._last_pwm:
             return
@@ -45,10 +48,12 @@ class Fan(config_params.Configurable):
         self._last_pwm = pwm
 
     def _change_state(self, state):
+        """ Change state and log it """
         self._state = state
         logger.info("Changing state of {} to {}".format(self.name, state))
 
     def update(self, dt):
+        """ This is where the internal state machine is implemented """
         logger.debug("Speed of {} is {} rpm".format(self.name, self.get_rpm()))
 
         for thermometer in self.thermometers:
@@ -88,6 +93,7 @@ class Fan(config_params.Configurable):
 
         else:
             raise Exception("Unknown state " + self._state)
+
 
 class SystemFan(Fan, config_params.Configurable):
     _params = [
