@@ -80,8 +80,6 @@ class Fan(config_params.Configurable):
                 self._change_state("running")
             elif self._settle_timer(dt):
                 self._set_pwm_checked(0)
-                self._settle_timer.limit = min(self._settle_timer.limit * 2,
-                                               self.max_settle_time)
                 self._change_state("stopped")
                 self._stopped_since = time.time()
             else:
@@ -95,6 +93,9 @@ class Fan(config_params.Configurable):
 
                 if self._stopped_since + self.settle_time_reset_interval < time.time():
                     self._settle_timer.limit = self.min_settle_time
+                else:
+                    self._settle_timer.limit = min(self._settle_timer.limit * 2,
+                                                   self.max_settle_time)
 
         else:
             raise Exception("Unknown state " + self._state)
