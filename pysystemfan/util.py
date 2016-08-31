@@ -54,7 +54,7 @@ class Pid(config_params.Configurable):
 
         self._last_errors.append((error, dt))
 
-        logger.debug("error = {:.2f}, derivative = {:.2f}, integrator = {:.2f}".format(error,
+        logger.debug("error = {:.2g}, derivative = {:.2g}, integrator = {:.2g}".format(error,
                                                                                 smooth_derivative,
                                                                                 self._integrator))
 
