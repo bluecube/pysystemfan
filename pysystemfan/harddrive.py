@@ -149,8 +149,8 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         self._cached_spinning = is_spinning
         self._cached_iops = ops / dt
 
-        logger.debug("Harddrive {} {}°C (target {}°C, s), {:.1g} iops{}".format(self.name,
-                                                                           self._cached_temperature,
-                                                                           self.target_temperature,
-                                                                           self._cached_iops,
-                                                                           ", spinning" if self._cached_spinning else ""))
+        logger.debug("Harddrive {} {}°C (target {}°C), {:.1g} iops{}".format(self.name,
+                                                                             self._cached_temperature,
+                                                                             self.target_temperature,
+                                                                             self._cached_iops,
+                                                                             ", spinning" if self._cached_spinning else ""))
