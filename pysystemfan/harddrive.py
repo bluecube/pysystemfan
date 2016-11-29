@@ -66,6 +66,8 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
 
             if id_number == 194: #"Temperature_Celsius"
                 return int(split[9])
+            elif id_number == 190: #"Airflow_Temperature_Cel
+                return int(split[9])
 
         raise RuntimeError("Didn't find temperature in output of {}".format(_list_to_shell(command)))
 
