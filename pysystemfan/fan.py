@@ -16,7 +16,7 @@ class Fan(config_params.Configurable):
         ("spinup_pwm", 128, "Minimal pwm settings to overcome static friction in the fan. Will be kept for first update period after start."),
         ("min_settle_time", 120, "Minimal number of seconds at minimum pwm before stopping the fan."),
         ("max_settle_time", 3 * 60 * 60, "Maximal number of seconds at minimum pwm before stopping the fan."),
-        ("settle_time_reset_interval", 30 * 60, "After how many seconds of stopped fan is the settle time reset to minimum"),
+        ("settle_time_reset_interval", 60 * 60, "After how many seconds of stopped fan is the settle time reset to minimum"),
         ("pid", config_params.InstanceOf([util.Pid], Exception), "PID controller for this fan."),
         ("thermometers", config_params.ListOf([thermometer.SystemThermometer,
                                                harddrive.Harddrive,
