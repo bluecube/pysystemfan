@@ -53,10 +53,12 @@ class Controler(config_params.Configurable):
     def run(self):
         try:
             with contextlib.ExitStack() as stack:
-                stack.callback(self.full_steam)
+                logger.info("PySystemFan started")
+                self.full_steam()
                 stack.enter_context(util.Interrupter())
 
-                logger.info("PySystemFan started")
+                stack.callback(self.full_steam)
+
                 while True:
                     time.sleep(self.update_time)
                     self.update(self.update_time)
