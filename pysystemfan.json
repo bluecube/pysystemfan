@@ -18,7 +18,7 @@
                     "class": "SystemThermometer",
                     "name": "System temp",
                     "path": "/sys/class/hwmon/hwmon2/temp1_input",
-                    "target_temperature": 52
+                    "target_temperature": 49
                 },
                 {
                     "class": "Harddrive",
