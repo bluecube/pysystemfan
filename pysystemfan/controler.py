@@ -20,8 +20,12 @@ class Controler(config_params.Configurable):
                                        fan.MockFan]), ""),
     ]
 
-    def __init__(self, **extra_args):
-        self._load_config("pysystemfan.json")
+    def __init__(self, config = None, **extra_args):
+        if config is None:
+            self._load_config("pysystemfan.json")
+        else:
+            self._load_config(config)
+
         logging_config = {
             "level": logging.getLevelName(self.log_level),
             "format": "%(asctime)s %(name)s: %(message)s",
