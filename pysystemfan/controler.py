@@ -7,6 +7,7 @@ import argparse
 import time
 import json
 import logging
+import logging.handlers
 
 logger = logging.getLogger(__name__)
 
@@ -31,8 +32,12 @@ class Controler(config_params.Configurable):
             "format": "%(asctime)s %(name)s: %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S"
         }
+        logging_config["handlers"] = [logging.StreamHandler()]
         if len(self.log_file):
-            logging_config["filename"] = self.log_file
+            logging_config["handlers"].append(logging.handlers.FileHandler(self.log_file))
+        else:
+            logging_config["handlers"].append(logging.handlers.SysLogHandler())
+
         logging.basicConfig(**logging_config)
 
         self._prev_time = None

@@ -54,7 +54,7 @@ class Fan(config_params.Configurable):
     def _change_state(self, state):
         """ Change state and log it """
         self._state = state
-        logger.info("Changing state of {} to {}".format(self.name, state))
+        logger.debug("Changing state of {} to {}".format(self.name, state))
 
     def update(self, dt):
         """ This is where the internal state machine is implemented """
