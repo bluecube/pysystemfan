@@ -1,4 +1,5 @@
 {
+    "update_time": 15,
     "log_level": "DEBUG",
     "fans": [
         {
@@ -8,9 +9,10 @@
             "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input",
 
             "pid": {
-                "kP": 80,
-                "kI": 0.4,
-                "kD": 1500
+                "kP": 25,
+                "kI": 0.5,
+                "kD": 0,
+                "_kD": 1000
             },
 
             "thermometers": [
@@ -18,7 +20,19 @@
                     "class": "SystemThermometer",
                     "name": "System temp",
                     "path": "/sys/class/hwmon/hwmon2/temp1_input",
-                    "target_temperature": 49
+                    "target_temperature": 47
+                },
+                {
+                    "class": "SystemThermometer",
+                    "name": "CPU core 0",
+                    "path": "/sys/class/thermal/thermal_zone1/temp",
+                    "target_temperature": 50
+                },
+                {
+                    "class": "SystemThermometer",
+                    "name": "CPU core 1",
+                    "path": "/sys/class/thermal/thermal_zone2/temp",
+                    "target_temperature": 50
                 },
                 {
                     "class": "Harddrive",
