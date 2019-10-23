@@ -63,32 +63,35 @@ class Fan(config_params.Configurable):
         for thermometer in self.thermometers:
             thermometer.update(dt)
 
-        normalized_temperature_error = max(t.get_normalized_temperature_error()
-                                           for t in self.thermometers)
-        pwm = self.pid.update(normalized_temperature_error, dt, self.min_pwm, 255)
+        errors = [t.get_normalized_temperature_error()
+                  for t in self.thermometers]
+        max_error = max(errors)
+        pwm, max_derivative = self.pid.update(errors, dt)
+
+        clamped_pwm = util.clamp(pwm, self.min_pwm, 255)
 
         if self._state == "running":
-            self._set_pwm_checked(pwm)
-            if normalized_temperature_error < 0 and pwm <= self.min_pwm:
+            self._set_pwm_checked(clamped_pwm)
+            if max_error < 0 and pwm <= self.min_pwm:
                 self._settle_timer.reset()
                 self._change_state("settle")
                 logger.debug("Settle time for {} is {}s".format(self.name, self._settle_timer.limit))
 
         elif self._state == "settle":
-            if normalized_temperature_error > 0 or pwm > self.min_pwm:
-                self._set_pwm_checked(pwm)
+            if max_error > 0 or pwm > self.min_pwm:
+                self._set_pwm_checked(clamped_pwm)
                 self._change_state("running")
             elif self._settle_timer(dt):
                 self._set_pwm_checked(0)
                 self._change_state("stopped")
                 self._stopped_since = time.time()
             else:
-                self._set_pwm_checked(pwm)
+                self._set_pwm_checked(clamped_pwm)
 
         elif self._state == "stopped":
             self.pid.reset_accumulator()
-            if normalized_temperature_error > 0:
-                self._set_pwm_checked(max(pwm, self.spinup_pwm))
+            if max_error > 0:
+                self._set_pwm_checked(max(clamped_pwm, self.spinup_pwm))
                 self._change_state("running")
 
                 if self._stopped_since + self.settle_time_reset_interval < time.time():
