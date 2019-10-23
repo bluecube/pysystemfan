@@ -59,6 +59,8 @@ class Configurable:
             used_names.add(name)
 
         unused_param_names = set(params) - used_names
+        unused_param_names.difference_update(param for param in params if param[0] == "_")
+
         if len(unused_param_names):
             raise RuntimeError("Parameters " + ", ".join(sorted(unused_param_names)) + " were not used")
 
