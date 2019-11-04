@@ -14,8 +14,7 @@
             "pid": {
                 "kP": 25,
                 "kI": 0.5,
-                "kD": 0,
-                "_kD": 1000
+                "kD": 500
             },
 
             "thermometers": [
@@ -23,26 +22,26 @@
                     "class": "SystemThermometer",
                     "name": "System temp",
                     "path": "/sys/class/hwmon/hwmon2/temp1_input",
-                    "target_temperature": 47
+                    "target_temperature": 45
                 },
                 {
                     "class": "SystemThermometer",
                     "name": "CPU core 0",
                     "path": "/sys/class/thermal/thermal_zone1/temp",
-                    "target_temperature": 50
+                    "target_temperature": 60
                 },
                 {
                     "class": "SystemThermometer",
                     "name": "CPU core 1",
                     "path": "/sys/class/thermal/thermal_zone2/temp",
-                    "target_temperature": 50
+                    "target_temperature": 60
                 },
                 {
                     "class": "Harddrive",
                     "name": "/dev/sda",
                     "path": "/dev/sda",
                     "measure_in_idle": true,
-                    "target_temperature": 39,
+                    "target_temperature": 36,
                     "spindown_time": 1800,
                     "spinning_only_activity": true
                 },
@@ -51,7 +50,7 @@
                     "name": "/dev/sdb",
                     "path": "/dev/sdb",
                     "measure_in_idle": true,
-                    "target_temperature": 39,
+                    "target_temperature": 36,
                     "spindown_time": 1800,
                     "spinning_only_activity": true
                 },
@@ -60,7 +59,7 @@
                     "name": "/dev/sdd",
                     "path": "/dev/sdd",
                     "measure_in_idle": true,
-                    "target_temperature": 39,
+                    "target_temperature": 36,
                     "spindown_time": 1800,
                     "spinning_only_activity": true
                 },
@@ -69,7 +68,7 @@
                     "name": "/dev/sdc (SSD)",
                     "path": "/dev/sdc",
                     "measure_in_idle": true,
-                    "target_temperature": 42
+                    "target_temperature": 45
                 }
             ]
         }
