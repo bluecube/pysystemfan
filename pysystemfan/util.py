@@ -2,9 +2,13 @@ from . import config_params
 
 import itertools
 import collections
+import time
 import logging
 
 logger = logging.getLogger(__name__)
+
+def sleep_until(t):
+    time.sleep(t - time.time())
 
 def clamp(v, low, high):
     return max(low, min(v, high))

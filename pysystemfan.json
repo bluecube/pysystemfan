@@ -1,6 +1,9 @@
 {
     "update_time": 15,
     "log_level": "DEBUG",
+    "status_server": {
+        "port": 8018
+    },
     "fans": [
         {
             "class": "SystemFan",

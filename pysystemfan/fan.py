@@ -58,10 +58,19 @@ class Fan(config_params.Configurable):
 
     def update(self, dt):
         """ This is where the internal state machine is implemented """
-        logger.debug("Speed of {} is {} rpm".format(self.name, self.get_rpm()))
+        new_dt = float("inf")
+        status_block = {}
 
+        rpm = self.get_rpm()
+        logger.debug("Speed of {} is {} rpm".format(self.name, rpm))
+
+        status_block["name"] = self.name
+        status_block["rpm"] = rpm
+
+        thermometers_status = []
         for thermometer in self.thermometers:
-            thermometer.update(dt)
+            thermometers_status.append(thermometer.update(dt))
+        status_block["thermometers"] = thermometers_status
 
         errors = [t.get_normalized_temperature_error()
                   for t in self.thermometers]
@@ -102,6 +111,8 @@ class Fan(config_params.Configurable):
 
         else:
             raise Exception("Unknown state " + self._state)
+
+        return new_dt, status_block
 
 
 class SystemFan(Fan, config_params.Configurable):

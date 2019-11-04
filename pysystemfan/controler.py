@@ -1,10 +1,12 @@
 from . import config_params
 from . import fan
+from . import status_server
 from . import util
 
 import contextlib
 import argparse
 import time
+import datetime
 import json
 import logging
 import logging.handlers
@@ -19,6 +21,7 @@ class Controler(config_params.Configurable):
         ("update_time", 30, "Time between updates in seconds."),
         ("fans", config_params.ListOf([fan.SystemFan,
                                        fan.MockFan]), ""),
+        ("status_server", config_params.InstanceOf([status_server.StatusServer], {}), ""),
     ]
 
     def __init__(self, config = None, **extra_args):
@@ -40,8 +43,6 @@ class Controler(config_params.Configurable):
 
         logging.basicConfig(**logging_config)
 
-        self._prev_time = None
-
         self._extra_args = extra_args
 
     def _load_config(self, path):
@@ -55,21 +56,45 @@ class Controler(config_params.Configurable):
         for fan in self.fans:
             fan.set_pwm(255)
 
-    def update(self, dt):
+    def update_forever(self):
+        last_update = time.time()
+        next_update = last_update + self.update_time
+
+        while True:
+            util.sleep_until(next_update)
+            last_update, next_update = self.update(last_update)
+
+    def update(self, last_update):
+        """ Update all fans and status server. """
+
+        now = time.time()
+        dt = now - last_update
+        new_dt = self.update_time
+
+        fan_status = []
         for f in self.fans:
-            f.update(dt)
+            fan_dt, status_block = f.update(dt)
+            fan_status.append(status_block)
+            new_dt = min(new_dt, fan_dt)
+
+        self.status_server["fans"] = fan_status
+        self.status_server["last_update"] = datetime.datetime.fromtimestamp(now).isoformat()
+        self.status_server["dt"] = new_dt
+
+        self.status_server.update()
+
+        return now, now + new_dt
 
     def run(self):
         try:
             with contextlib.ExitStack() as stack:
                 logger.info("PySystemFan started")
                 self.full_steam()
+                stack.enter_context(self.status_server)
+                stack.callback(self.full_steam)
                 stack.enter_context(util.Interrupter())
 
-                stack.callback(self.full_steam)
+                self.update_forever()
 
-                while True:
-                    time.sleep(self.update_time)
-                    self.update(self.update_time)
         except:
             logger.exception("Unhandled exception")
