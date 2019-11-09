@@ -155,7 +155,6 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
                                                                              self._cached_iops,
                                                                              ", spinning" if self._cached_spinning else ""))
         return {"type": self.__class__.__name__,
-                "name": self.name,
                 "temperature": self._cached_temperature,
                 "target_temperature": self.target_temperature,
                 "iops": self._cached_iops,

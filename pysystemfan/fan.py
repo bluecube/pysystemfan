@@ -33,6 +33,10 @@ class Fan(config_params.Configurable):
         self._last_pwm = None
         self._stopped_since = None
 
+        duplicate_thermometer_names = util.duplicates(thermometer.name for thermometer in self.thermometers)
+        if duplicate_thermometer_names:
+            raise ValueError("Duplicate thermometer names: {}".format(", ".join(duplicate_thermometer_names)))
+
     def get_rpm(self):
         """ Read rpm of the fan. Needs to be overridden. """
         raise NotImplementedError()
@@ -64,12 +68,11 @@ class Fan(config_params.Configurable):
         rpm = self.get_rpm()
         logger.debug("Speed of {} is {} rpm".format(self.name, rpm))
 
-        status_block["name"] = self.name
         status_block["rpm"] = rpm
 
-        thermometers_status = []
+        thermometers_status = {}
         for thermometer in self.thermometers:
-            thermometers_status.append(thermometer.update(dt))
+            thermometers_status[thermometer.name] = thermometer.update(dt)
         status_block["thermometers"] = thermometers_status
 
         errors = [t.get_normalized_temperature_error()

@@ -62,7 +62,6 @@ class SystemThermometer(Thermometer, config_params.Configurable):
         logger.debug("Thermometer {} {}°C (target {}°C)".format(self.name, self._cached_temperature, self.target_temperature))
 
         return {"type": self.__class__.__name__,
-                "name": self.name,
                 "temperature": self._cached_temperature,
                 "target_temperature": self.target_temperature}
 
@@ -83,5 +82,5 @@ class MockThermometer(Thermometer, config_params.Configurable):
 
     def update(self, dt):
         return {"type": self.__class__.__name__,
-                "name": self.name, "temperature": self.value,
+                "temperature": self.value,
                 "target_temperature": self.target_temperature}

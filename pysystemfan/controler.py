@@ -45,6 +45,10 @@ class Controler(config_params.Configurable):
 
         self._extra_args = extra_args
 
+        duplicate_fan_names = util.duplicates(fan.name for fan in self.fans)
+        if duplicate_fan_names:
+            raise ValueError("Duplicate fan names: {}".format(", ".join(duplicate_fan_names)))
+
     def _load_config(self, path):
         with open(path, "r") as fp:
             config = json.load(fp)
@@ -71,10 +75,10 @@ class Controler(config_params.Configurable):
         dt = now - last_update
         new_dt = self.update_time
 
-        fan_status = []
+        fan_status = {}
         for f in self.fans:
             fan_dt, status_block = f.update(dt)
-            fan_status.append(status_block)
+            fan_status[f.name] = status_block
             new_dt = min(new_dt, fan_dt)
 
         self.status_server["fans"] = fan_status

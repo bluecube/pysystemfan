@@ -13,6 +13,10 @@ def sleep_until(t):
 def clamp(v, low, high):
     return max(low, min(v, high))
 
+def duplicates(iterable):
+    seen = set()
+    return set(x for x in iterable if ((x in seen) or seen.add(x)))
+
 class TimeoutHelper:
     def __init__(self, limit):
         self.limit = limit
