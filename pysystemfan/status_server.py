@@ -46,7 +46,6 @@ class StatusServer(config_params.Configurable):
         address = (self.bind, self.port)
         class Handler(http.server.BaseHTTPRequestHandler):
             def do_GET(self):
-                logger.debug("%s from %s", self.requestline, self.client_address)
                 try:
                     if self.path == path:
                         document = json.dumps(instance._active_data, indent=2).encode("utf-8")
@@ -60,6 +59,12 @@ class StatusServer(config_params.Configurable):
                         self.send_error(404)
                 except Exception as e:
                     logger.exception("Exception in handler")
+
+            def log_error(self, msg, *args):
+                logger.warning("%s: " + msg, self.client_address[0], *args)
+
+            def log_message(self, msg, *args):
+                logger.debug("%s: " + msg, self.client_address[0], *args)
 
         self._server = http.server.HTTPServer(address, Handler)
         self._thread = threading.Thread(target=self._server.serve_forever,
