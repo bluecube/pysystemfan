@@ -12,11 +12,11 @@ logger = logging.getLogger(__name__)
 class Fan(config_params.Configurable):
     _params = [
         ("name", None, "Name that will appear in status output."),
-        ("min_pwm", 80, "Minimal allowed nonzero PWM value. Below this the fan will stop in normal mode, or stay on minimum in settle mode."),
-        ("spinup_pwm", 128, "Minimal pwm settings to overcome static friction in the fan. Will be kept for first update period after start."),
-        ("min_settle_time", 120, "Minimal number of seconds at minimum pwm before stopping the fan."),
-        ("max_settle_time", 3 * 60 * 60, "Maximal number of seconds at minimum pwm before stopping the fan."),
-        ("settle_time_reset_interval", 60 * 60, "After how many seconds of stopped fan is the settle time reset to minimum"),
+        ("min_pwm", 80, "Minimal allowed nonzero PWM value. Below this the fan will stay on minimum in settle mode and then stop when the settle timeout runs out."),
+        ("spinup_pwm", 128, "Minimal pwm settings to overcome static friction in the fan."),
+        ("spinup_time", 10, "How long to keep the spinup pwm for start."),
+        ("min_settle_time", 30, "Minimal number of seconds at minimum pwm before stopping the fan."),
+        ("max_settle_time", 12 * 60 * 60, "Maximal number of seconds at minimum pwm before stopping the fan."),
         ("pid", config_params.InstanceOf([util.Pid], Exception), "PID controller for this fan."),
         ("thermometers", config_params.ListOf([thermometer.SystemThermometer,
                                                harddrive.Harddrive,
@@ -27,6 +27,7 @@ class Fan(config_params.Configurable):
         self.process_params(params)
 
         self._state = "running"
+        self._spinup_timer = util.TimeoutHelper(self.spinup_time)
         self._settle_timer = util.TimeoutHelper(self.min_settle_time)
         self.set_pwm(255)
 
@@ -82,8 +83,16 @@ class Fan(config_params.Configurable):
 
         clamped_pwm = util.clamp(pwm, self.min_pwm, 255)
 
-        if self._state == "running":
+        if self._state == "running" or self._state == "spinup":
+            if self._state == "spinup":
+                if self._spinup_timer(dt):
+                    self._change_state("running")
+                else:
+                    new_dt = min(new_dt, self._spinup_timer.remaining_time)
+                    clamped_pwm = max(clamped_pwm, self.spinup_pwm)
+
             self._set_pwm_checked(clamped_pwm)
+
             if max_error < 0 and pwm <= self.min_pwm:
                 self._settle_timer.reset()
                 self._change_state("settle")
@@ -104,16 +113,23 @@ class Fan(config_params.Configurable):
             self.pid.reset_accumulator()
             if max_error > 0:
                 self._set_pwm_checked(max(clamped_pwm, self.spinup_pwm))
-                self._change_state("running")
+                self._change_state("spinup")
+                self._spinup_timer.reset()
 
-                if self._stopped_since + self.settle_time_reset_interval < time.time():
-                    self._settle_timer.limit = self.min_settle_time
-                else:
-                    self._settle_timer.limit = min(self._settle_timer.limit * 2,
-                                                   self.max_settle_time)
+                # Increase settle timer when spinning up, to avoid periodic spinups and spin downs
+                # due to minimum allowed fan RPM being too much for the required temperature
+                self._settle_timer.limit = min(self._settle_timer.limit * 2,
+                                               self.max_settle_time)
+            elif max_derivative <= 0:
+                # If the derivative is not increasing, then we are in steady state and we start
+                # decreasing settle timer
+                self._settle_timer.limit = max(self._settle_timer.limit - dt,
+                                               self.min_settle_time)
 
         else:
             raise Exception("Unknown state " + self._state)
+
+        status_block["settle_timeout"] = self._settle_timer.limit
 
         return new_dt, status_block
 

@@ -23,11 +23,11 @@ class TimeoutHelper:
         self.reset()
 
     def reset(self):
-        self.counter = self.limit
+        self.remaining_time = self.limit
 
     def __call__(self, dt):
-        self.counter -= dt
-        if self.counter < 0:
+        self.remaining_time -= dt
+        if self.remaining_time <= 0:
             self.reset()
             return True
         else:
