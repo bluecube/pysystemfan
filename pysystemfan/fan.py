@@ -21,6 +21,7 @@ class Fan(config_params.Configurable):
         ("thermometers", config_params.ListOf([thermometer.SystemThermometer,
                                                harddrive.Harddrive,
                                                thermometer.MockThermometer]), ""),
+        ("fan_max_rpm_sanity_check", 0, "Fan speed larger than this value are considered as a glitch reading and ignored. Value of 0 means to not check the range."),
     ]
 
     def __init__(self, parent, params):
@@ -32,6 +33,7 @@ class Fan(config_params.Configurable):
         self.set_pwm(255)
 
         self._last_pwm = None
+        self._last_rpm = 0
         self._stopped_since = None
 
         duplicate_thermometer_names = util.duplicates(thermometer.name for thermometer in self.thermometers)
@@ -54,7 +56,7 @@ class Fan(config_params.Configurable):
 
         logger.debug("Setting {} to {}%".format(self.name, (100 * pwm) // 255))
         self.set_pwm(pwm)
-        self._last_pwm = pwm
+        self._fan_max_rpm_sanity_checlast_pwm = pwm
 
     def _change_state(self, state):
         """ Change state and log it """
@@ -67,7 +69,12 @@ class Fan(config_params.Configurable):
         status_block = {}
 
         rpm = self.get_rpm()
-        logger.debug("Speed of {} is {} rpm".format(self.name, rpm))
+        if self.fan_max_rpm_sanity_check != 0 and rpm > self.fan_max_rpm_sanity_check:
+            logger.warning("Detected glitch speed reading of {} ({}), using last value of {} instead.",
+                           self.name, rpm, self._last_rpm)
+            rpm = self._last_rpm
+        else:
+            logger.debug("Speed of {} is {} rpm".format(self.name, rpm))
 
         status_block["rpm"] = rpm
 

@@ -11,6 +11,8 @@
             "pwm_path": "/sys/class/hwmon/hwmon2/pwm1",
             "rpm_path": "/sys/class/hwmon/hwmon2/fan1_input",
 
+            "fan_max_rpm_sanity_check": 5000,
+
             "pid": {
                 "kP": 25,
                 "kI": 0.5,
