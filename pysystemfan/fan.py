@@ -56,7 +56,7 @@ class Fan(config_params.Configurable):
 
         logger.debug("Setting {} to {}%".format(self.name, (100 * pwm) // 255))
         self.set_pwm(pwm)
-        self._fan_max_rpm_sanity_checlast_pwm = pwm
+        self._last_pwm = pwm
 
     def _change_state(self, state):
         """ Change state and log it """
