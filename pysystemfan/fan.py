@@ -30,9 +30,10 @@ class Fan(config_params.Configurable):
         self._state = "running"
         self._spinup_timer = util.TimeoutHelper(self.spinup_time)
         self._settle_timer = util.TimeoutHelper(self.min_settle_time)
-        self.set_pwm(255)
 
         self._last_pwm = None
+        self.set_pwm_checked(255)
+
         self._last_rpm = 0
         self._stopped_since = None
 
@@ -48,7 +49,7 @@ class Fan(config_params.Configurable):
         """ Set the PWM input the fan. Needs to be overridden. """
         raise NotImplementedError()
 
-    def _set_pwm_checked(self, pwm):
+    def set_pwm_checked(self, pwm):
         """ Wrapped set_pwm, deduplicates and logs speed changes """
         pwm = int(pwm)
         if pwm == self._last_pwm:
@@ -98,7 +99,7 @@ class Fan(config_params.Configurable):
                     new_dt = min(new_dt, self._spinup_timer.remaining_time)
                     clamped_pwm = max(clamped_pwm, self.spinup_pwm)
 
-            self._set_pwm_checked(clamped_pwm)
+            self.set_pwm_checked(clamped_pwm)
 
             if max_error < 0 and pwm <= self.min_pwm:
                 self._settle_timer.reset()
@@ -107,19 +108,19 @@ class Fan(config_params.Configurable):
 
         elif self._state == "settle":
             if max_error > 0 or pwm > self.min_pwm:
-                self._set_pwm_checked(clamped_pwm)
+                self.set_pwm_checked(clamped_pwm)
                 self._change_state("running")
             elif self._settle_timer(dt):
-                self._set_pwm_checked(0)
+                self.set_pwm_checked(0)
                 self._change_state("stopped")
                 self._stopped_since = time.time()
             else:
-                self._set_pwm_checked(clamped_pwm)
+                self.set_pwm_checked(clamped_pwm)
 
         elif self._state == "stopped":
             self.pid.reset_accumulator()
             if max_error > 0:
-                self._set_pwm_checked(max(clamped_pwm, self.spinup_pwm))
+                self.set_pwm_checked(max(clamped_pwm, self.spinup_pwm))
                 self._change_state("spinup")
                 self._spinup_timer.reset()
 

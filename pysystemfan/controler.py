@@ -58,7 +58,7 @@ class Controler(config_params.Configurable):
     def full_steam(self):
         logger.info("Setting all fans to 100% power.")
         for fan in self.fans:
-            fan.set_pwm(255)
+            fan.set_pwm_checked(255)
 
     def update_forever(self):
         last_update = time.time()
@@ -93,7 +93,6 @@ class Controler(config_params.Configurable):
         try:
             with contextlib.ExitStack() as stack:
                 logger.info("PySystemFan started")
-                self.full_steam()
                 stack.enter_context(self.status_server)
                 stack.callback(self.full_steam)
                 stack.enter_context(util.Interrupter())
