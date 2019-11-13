@@ -35,7 +35,6 @@ class Fan(config_params.Configurable):
         self.set_pwm_checked(255)
 
         self._last_rpm = 0
-        self._stopped_since = None
 
         duplicate_thermometer_names = util.duplicates(thermometer.name for thermometer in self.thermometers)
         if duplicate_thermometer_names:
@@ -113,7 +112,6 @@ class Fan(config_params.Configurable):
             elif self._settle_timer(dt):
                 self.set_pwm_checked(0)
                 self._change_state("stopped")
-                self._stopped_since = time.time()
             else:
                 self.set_pwm_checked(clamped_pwm)
 
