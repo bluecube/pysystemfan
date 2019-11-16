@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class Fan(config_params.Configurable):
     _params = [
         ("name", None, "Name that will appear in status output."),
-        ("min_pwm", 80, "Minimal allowed nonzero PWM value. Below this the fan will stay on minimum in settle mode and then stop when the settle timeout runs out."),
+        ("min_pwm", 80, "Initial value for minimal allowed nonzero PWM value. Below this the fan will stay on minimum in settle mode and then stop when the settle timeout runs out. This value will be modified to track the actual fan limits."),
         ("spinup_pwm", 128, "Minimal pwm settings to overcome static friction in the fan."),
         ("spinup_time", 10, "How long to keep the spinup pwm for start."),
         ("min_settle_time", 30, "Minimal number of seconds at minimum pwm before stopping the fan."),
@@ -30,6 +30,8 @@ class Fan(config_params.Configurable):
         self._state = "running"
         self._spinup_timer = util.TimeoutHelper(self.spinup_time)
         self._settle_timer = util.TimeoutHelper(self.min_settle_time)
+
+        self._min_pwm_helper = _MinPowerHelper(self.min_pwm, 1, parent.min_rpm_probe_interval)
 
         self._last_pwm = None
         self.set_pwm_checked(255)
@@ -51,12 +53,18 @@ class Fan(config_params.Configurable):
     def set_pwm_checked(self, pwm):
         """ Wrapped set_pwm, deduplicates and logs speed changes """
         pwm = int(pwm)
+        if pwm > 255:
+            pwm = 255
         if pwm == self._last_pwm:
             return
 
-        logger.debug("Setting {} to {}%".format(self.name, (100 * pwm) // 255))
+        logger.debug("Setting {} to {}".format(self.name, self._pwm_to_percent(pwm)))
         self.set_pwm(pwm)
         self._last_pwm = pwm
+
+    @staticmethod
+    def _pwm_to_percent(pwm):
+        return str((100 * pwm) // 255) + "%"
 
     def _change_state(self, state):
         """ Change state and log it """
@@ -88,9 +96,16 @@ class Fan(config_params.Configurable):
         max_error = max(errors)
         pwm, max_derivative = self.pid.update(errors, dt)
 
-        clamped_pwm = util.clamp(pwm, self.min_pwm, 255)
+        clamped_pwm = clamped_pwm = util.clamp(pwm, self._min_pwm_helper.value, 255)
 
-        if self._state == "running" or self._state == "spinup":
+        if rpm == 0 and self._state in ("running", "settle"):
+            self._spinup(clamped_pwm)
+            self._min_pwm_helper.failed()
+            logger.info("%s not spinning when it should, increasing min PWM to %s",
+                        self.name,
+                        self._pwm_to_percent(self._min_pwm_helper.value))
+
+        elif self._state in ("running", "spinup"):
             if self._state == "spinup":
                 if self._spinup_timer(dt):
                     self._change_state("running")
@@ -100,27 +115,26 @@ class Fan(config_params.Configurable):
 
             self.set_pwm_checked(clamped_pwm)
 
-            if max_error < 0 and pwm <= self.min_pwm:
+            if max_error < 0 and clamped_pwm <= self._min_pwm_helper.value:
                 self._settle_timer.reset()
                 self._change_state("settle")
                 logger.debug("Settle time for {} is {}s".format(self.name, self._settle_timer.limit))
 
         elif self._state == "settle":
-            if max_error > 0 or pwm > self.min_pwm:
+            if max_error > 0 or clamped_pwm > self._min_pwm_helper.value:
                 self.set_pwm_checked(clamped_pwm)
                 self._change_state("running")
             elif self._settle_timer(dt):
                 self.set_pwm_checked(0)
                 self._change_state("stopped")
             else:
-                self.set_pwm_checked(clamped_pwm)
+                self._min_pwm_helper.update(dt)
+                self.set_pwm_checked(self._min_pwm_helper.value)
 
         elif self._state == "stopped":
             self.pid.reset_accumulator()
             if max_error > 0:
-                self.set_pwm_checked(max(clamped_pwm, self.spinup_pwm))
-                self._change_state("spinup")
-                self._spinup_timer.reset()
+                self._spinup(clamped_pwm)
 
                 # Increase settle timer when spinning up, to avoid periodic spinups and spin downs
                 # due to minimum allowed fan RPM being too much for the required temperature
@@ -138,6 +152,11 @@ class Fan(config_params.Configurable):
         status_block["settle_timeout"] = self._settle_timer.limit
 
         return new_dt, status_block
+
+    def _spinup(self, pwm):
+        self.set_pwm_checked(max(pwm, self.spinup_pwm))
+        self._change_state("spinup")
+        self._spinup_timer.reset()
 
 
 class SystemFan(Fan, config_params.Configurable):
@@ -172,3 +191,27 @@ class MockFan(Fan, config_params.Configurable):
 
     def set_pwm(self, value):
         pass
+
+
+class _MinPowerHelper:
+    """ Helper state machine that tracks the minimum allowed PWM input of a fan. """
+
+    def __init__(self, initial_value, step, probe_interval):
+        self.value = initial_value
+        self._step = step
+        self._probe_timeout = util.TimeoutHelper(probe_interval)
+        self._probing = True
+
+    def update(self, dt):
+        if self._probing:
+            self.value -= self._step
+        elif self._probe_timeout(dt):
+            self._probing = True
+            self.value -= self._step
+
+        return self.value
+
+    def failed(self):
+        self.value += self._step
+        self._probing = False
+        self._probe_timeout.reset()

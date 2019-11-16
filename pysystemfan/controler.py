@@ -18,6 +18,7 @@ class Controler(config_params.Configurable):
         ("log_file", "", "Where to log. If empty (default), logs to stdout."),
         ("log_level", "WARNING", "Minimal logging level. "
                                  "One of DEBUG, INFO, WARNING, ERROR, CRITICAL"),
+        ("min_rpm_probe_interval", 30 * 24 * 60 * 60, "How often to try decreasing the minimum fan speed when one is already learned"),
         ("update_time", 30, "Time between updates in seconds."),
         ("fans", config_params.ListOf([fan.SystemFan,
                                        fan.MockFan]), ""),
