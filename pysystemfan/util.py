@@ -38,7 +38,7 @@ class Pid(config_params.Configurable):
         ("kP", 0, "Proportional constant"),
         ("kI", 0, "Integral constant"),
         ("kD", 0, "Derivative constant"),
-        ("derivative_smoothing", 10, "How many seconds has 50% influence on the result"),
+        ("derivative_smoothing", 30, "How many seconds has 50% influence on the result"),
         ("max_integrator", 255, "Maximum value of integrator (anti windup)"),
     ]
 
@@ -70,7 +70,6 @@ class Pid(config_params.Configurable):
             self._previous_errors = errors
             self._derivatives = itertools.repeat(0)
 
-        logger.debug("m = {:.2g}".format(m))
         max_next_predicted_error = None
         selected_derivative = None # Selecting a derivative that would cause highest error in the next time step
         new_derivatives = []
