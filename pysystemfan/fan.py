@@ -149,6 +149,8 @@ class Fan(config_params.Configurable):
         else:
             raise Exception("Unknown state " + self._state)
 
+        status_block["pid"] = {"error": max_error, "derivative": 60*max_derivative, "integrator": self.pid._integrator/60} # Derivative is in degrees / minute, integrator in minutes
+        status_block["min_pwm"] = self._min_pwm_helper.value
         status_block["settle_timeout"] = self._settle_timer.limit
 
         return new_dt, status_block
