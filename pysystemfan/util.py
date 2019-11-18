@@ -39,7 +39,7 @@ class Pid(config_params.Configurable):
         ("kI", 0, "Integral constant"),
         ("kD", 0, "Derivative constant"),
         ("derivative_smoothing", 30, "How many seconds has 50% influence on the result"),
-        ("max_integrator", 255, "Maximum value of integrator (anti windup)"),
+        ("max_output", 255, "Maximum value of output due to the integral term (anti windup)"),
     ]
 
     def __init__(self, parent, params):
@@ -49,6 +49,8 @@ class Pid(config_params.Configurable):
             self._smoothing = 0
         else:
             self._smoothing = 2**(-1 / self.derivative_smoothing)
+
+        self._max_integrator = self.max_output / self.kI
 
         self.reset()
 
@@ -101,7 +103,7 @@ class Pid(config_params.Configurable):
         ret = self.kP * max_error + self.kI * self._integrator + self.kD * selected_derivative
 
         self._integrator =  clamp(self._integrator + dt * (prev_max_error + max_error) / 2,
-                                  0, self.max_integrator)
+                                  0, self._max_integrator)
 
         return ret, max_derivative
 
