@@ -38,7 +38,7 @@ class Pid(config_params.Configurable):
         ("kP", 0, "Proportional constant"),
         ("kI", 0, "Integral constant"),
         ("kD", 0, "Derivative constant"),
-        ("derivative_smoothing", 30, "How many seconds has 50% influence on the result"),
+        ("derivative_smoothing", 120, "How many seconds has 50% influence on the result"),
         ("max_output", 255, "Maximum value of output due to the integral term (anti windup)"),
     ]
 
