@@ -15,7 +15,7 @@
 
             "pid": {
                 "kP": 25,
-                "kI": 0.1,
+                "kI": 0.05,
                 "kD": 500
             },
 
@@ -43,7 +43,7 @@
                     "name": "/dev/sda",
                     "path": "/dev/sda",
                     "measure_in_idle": true,
-                    "target_temperature": 36,
+                    "target_temperature": 35,
                     "spindown_time": 1800,
                     "spinning_only_activity": true
                 },
@@ -52,7 +52,7 @@
                     "name": "/dev/sdb",
                     "path": "/dev/sdb",
                     "measure_in_idle": true,
-                    "target_temperature": 36,
+                    "target_temperature": 35,
                     "spindown_time": 1800,
                     "spinning_only_activity": true
                 },
@@ -61,7 +61,7 @@
                     "name": "/dev/sdd",
                     "path": "/dev/sdd",
                     "measure_in_idle": true,
-                    "target_temperature": 36,
+                    "target_temperature": 35,
                     "spindown_time": 1800,
                     "spinning_only_activity": true
                 },
