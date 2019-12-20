@@ -8,7 +8,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 def sleep_until(t):
-    time.sleep(t - time.time())
+    time_to_sleep = t - time.time()
+    if time_to_sleep < 0:
+        logger.warn("Negative time to sleep (%fs)", time_to_sleep)
+    else:
+        time.sleep(t - time.time())
 
 def clamp(v, low, high):
     return max(low, min(v, high))
