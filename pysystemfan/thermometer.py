@@ -53,7 +53,7 @@ class SystemThermometer(Thermometer, config_params.Configurable):
         return self._cached_temperature
 
     def get_cached_activity(self):
-        return self._cached_activity
+        return (self._cached_activity, 0)
 
     def update(self, dt):
         self._cached_temperature = self.get_temperature()
@@ -68,7 +68,8 @@ class SystemThermometer(Thermometer, config_params.Configurable):
 class MockThermometer(Thermometer, config_params.Configurable):
     _params = [
         ("value", 30, "Temperature shown."),
-        ("activity", 0.5, "Activity shown."),
+        ("activity1", 0.5, "First activity shown."),
+        ("activity2", 0.0, "Second activity shown."),
     ]
 
     def get_temperature(self):

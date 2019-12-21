@@ -36,9 +36,6 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
                              "This value will be rounded to the nearest update interval, "
                              "if zero, the drive will not be spun down by this sctipt."),
         ("measure_in_idle", False, "Selects whether to keep measuring temperature even when the drive is idle."),
-        ("spinning_only_activity", False, "Activity for this drive is 1 or 0 depending "
-                                          "on whether it is spinning or not. Otherwise "
-                                          "IO operation count per second is used."),
     ]
 
     def __init__(self, parent, params):
@@ -111,10 +108,7 @@ class Harddrive(thermometer.Thermometer, config_params.Configurable):
         return self._cached_temperature
 
     def get_cached_activity(self):
-        if self.spinning_only_activity:
-            return 1 if self._cached_spinning else 0
-        else:
-            return self._cached_iops
+        return (int(self._cached_spinning), self._cached_iops)
 
     def _get_temp_safe(self):
         """ Return temperature, is_spinning tuple."""
